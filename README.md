@@ -10,7 +10,8 @@ This is a simple program that monitors the serial port on the Currnet Cost Envi 
 
 Some background info:
 =====================
-Info on the data from the CUst Cost serial port: http://www.currentcost.com/download/Envi%20XML%20v19%20-%202011-01-11.pdf
+* Info on the data from the Cust Cost serial port: http://www.currentcost.com/download/Envi%20XML%20v19%20-%202011-01-11.pdf
+* This was developed on Arduino 0.22 IDE. 
 
 Parts List:
 ===========
