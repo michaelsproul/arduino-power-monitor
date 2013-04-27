@@ -15,9 +15,9 @@ Some background info:
 
 Parts List:
 ===========
-1) Current Cost 128.  http://www.currentcost.com/product-envi.html  I got mine from:  http://www.smartnow.com.au/ 
-2) Arduino.  In used an Etherten from Freetronics:  http://www.freetronics.com/products/etherten
-3) A home made Serial Cable. RJ45 on one side to the Arduino on the other side of the cable. (to do: add more info here)
-4) A login account at www.cosm.com
-5) This GIT repo
+1. Current Cost 128.  http://www.currentcost.com/product-envi.html  I got mine from:  http://www.smartnow.com.au/ 
+2. Arduino.  In used an Etherten from Freetronics:  http://www.freetronics.com/products/etherten
+3. A home made Serial Cable. RJ45 on one side to the Arduino on the other side of the cable. (to do: add more info here)
+4. A login account at www.cosm.com
+5. This GIT repo
 
