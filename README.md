@@ -5,7 +5,7 @@ A simple program to monitor a Current Cost 128 serial port and send the data to 
 
 What does it do?
 ================
-This is a simple program that monitors the serial port on the Currnet Cost Envi and writes the data to cost.com.
+This is a simple program that monitors the serial port on the Currnet Cost Envi and writes the data to cosm.com.
 
 
 Some background info:
