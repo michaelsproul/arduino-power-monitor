@@ -1,0 +1,8 @@
+# Personal details
+api_key
+ccbridge_id
+src/xively_pass.h
+web/feed_details.js
+
+junk/*
+.build/*

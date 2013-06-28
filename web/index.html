@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>
+Energy Monitoring | Sproul
+</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>  
+<script src="http://d23cj0cdvyoxg0.cloudfront.net/cosmjs-1.0.0.min.js"></script>
+<script type="text/javascript" src="feed_details.js"></script>
+<script type="text/javascript" src="calc.js"></script>
+<link rel="stylesheet" type="text/css" href="style.css">
+<link href='http://fonts.googleapis.com/css?family=Droid+Sans:400,700' rel='stylesheet' type='text/css'>
+</head>
+<body>
+<h1>
+Energy Monitoring
+</h1>
+<div id="content">
+<h2>Stats</h2>
+<p>
+Current power usage: <span id="currentpower"></span> W
+<br>
+<br>
+<b>Energy usage</b><br>
+Last 6 hours: <span id="energy6h"></span> kWh<br>
+Last 12 hours: <span id="energy12h"></span> kWh<br>
+Last 24 hours: <span id="energy24h"></span> kWh<br>
+Last <input id="energyxh_input" type="number" onchange="recalc_variable_energy()"> hours: <span id="energyxh"></span> kWh<br>
+<button onclick="recalc_variable_energy()">Recalculate</button>
+</p>
+<h2>Download data</h2>
+<p>
+Which feed?
+<select id="stream_list">
+<option value="0">Temperature</option>
+<option value="1" selected="selected">Power</option>
+</select>
+<br>
+Over what time period?*
+<input id="duration_size">
+<select id="duration_units">
+<option value="seconds">seconds</option>
+<option value="minutes">minutes</option>
+<option value="hours" selected="selected">hours</option>
+<option value="days">days</option>
+</select>
+<br>
+<button id="download_button" type="button" onclick="download()">Download</button>
+<br>
+<br>
+<span class="aside">
+*Counting backwards from now. More features coming soon!
+<br><br>
+Note: If you have trouble downloading data make sure you've logged into Cosm first
+</span>
+<br>
+<div id="footer">Michael Sproul, data at <a href="https://cosm.com/feeds/33611" target="_blank">https://cosm.com/feeds/33611</a></div>
+</p>
+</div>
+</body>
+</html>
+
