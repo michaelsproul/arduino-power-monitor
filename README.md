@@ -1,23 +1,34 @@
-Current-Cost-to-COSM-via-Arduino
+Arduino Power Monitor
 ================================
 
-A simple program to monitor a Current Cost 128 serial port and send the data to COSM using an Arduino.
+A simple program to monitor the serial output of a CurrentCost 128 power meter and send the data to *Xively* using an Arduino.
 
-What does it do?
-================
-This is a simple program that monitors the serial port on the Currnet Cost Envi and writes the data to cosm.com.
+## About
 
+Updated by Michael Sproul for use with Xively (the service formerly known as Cosm) and the Python based CLI build tool, `ino`. Based on original code by Brian Lee (bleep1)
 
-Some background info:
-=====================
-* Info on the data from the Cust Cost serial port: http://www.currentcost.com/download/Envi%20XML%20v19%20-%202011-01-11.pdf
-* This was developed on Arduino 0.22 IDE. It also uses some extra libraries.
-
-Parts List:
-===========
-1. Current Cost 128.  http://www.currentcost.com/product-envi.html  I got mine from:  http://www.smartnow.com.au/ 
-2. Arduino.  In used an Etherten from Freetronics:  http://www.freetronics.com/products/etherten
+## Parts List
+1. Current Cost 128 power monitor.  http://www.currentcost.com/product-envi.html  I got mine from:  http://www.smartnow.com.au/ 
+2. Arduino.  I used an Etherten from Freetronics:  http://www.freetronics.com/products/etherten
 3. A home made Serial Cable. RJ45 on one side to the Arduino on the other side of the cable. (to do: add more info here)
-4. A login account at www.cosm.com
+4. A login account at www.xively.com
 5. This GIT repo
+6. A few Arduino libraries
+7. `ino` from http://inotool.org/
+
+## Libraries
+Clone each libary into its own folder in `/usr/share/arduino/libraries`
+
+* The Xively library from https://github.com/xively/xively_arduino
+* The BufferedSerial library from https://code.google.com/p/arduino-buffered-serial/
+
+The web page also uses the XivelyJS library (http://xively.github.io/xively-js/) and JQuery
+
+## Building
+Add your Xively feed details in the necessary places, modify ino.ini to reflect the arduino you've got, then run `ino build`.
+
+## Reference material
+* Info on the data from the Cust Cost serial port: http://www.currentcost.com/download/Envi%20XML%20v19%20-%202011-01-11.pdf
+* Another guy who did something similar: http://mungbean.org/blog/?p=477
+
 

@@ -7,14 +7,14 @@ var global_interval = 300;
 $(document).ready(function($) {
 	init();
 	live_power();
-	last_x_hours(6, "#energy6h");
-	last_x_hours(12, "#energy12h");
-	last_x_hours(24, "#energy24h");
+	// last_x_hours(6, "#energy6h");
+	// last_x_hours(12, "#energy12h");
+	// last_x_hours(24, "#energy24h");
 });
 
 function init()
 {
-	cosm.setKey(xively_key);
+	xively.setKey(xively_key);
 }
 
 function recalc_variable_energy()
@@ -25,12 +25,12 @@ function recalc_variable_energy()
 function live_power()
 {
 	var selector = "#currentpower";
-	cosm.datastream.get(feedID, datastreamID, function (datastream) {
+	xively.datastream.get(feedID, datastreamID, function (datastream) {
 		// Set the current power field		
 		$(selector).html(datastream["current_value"]);
 		
 		// Keep it in sync with realtime data
-		cosm.datastream.subscribe(feedID, datastreamID, function (event , datastream_updated) { 
+		xively.datastream.subscribe(feedID, datastreamID, function (event, datastream_updated) { 
       			$(selector).html(datastream_updated["current_value"]);
     		});
 	});
@@ -45,7 +45,7 @@ function last_x_hours(hours, selector)
 		limit: 1000,
 		interval: global_interval
 	};
-	cosm.datastream.history (feedID, datastreamID, options, function(data) {
+	xively.datastream.history (feedID, datastreamID, options, function(data) {
 			var energy = 0;
 			for (x in data.datapoints) {
 				energy += parseInt(data.datapoints[x].value)/ (12*1000);
@@ -58,11 +58,11 @@ function last_x_hours(hours, selector)
 	);
 }
 
-// TODO: Fix this
+// TODO: Fix this?
 function populate_lists()
 {
 	var stream_options = $("#stream_list");	
-	cosm.datastream.list(feedID, function(data) {
+	xively.datastream.list(feedID, function(data) {
 		for (x in data.datastreams) {
 			alert("HELLLO!");	
 		}			
@@ -71,8 +71,8 @@ function populate_lists()
 
 function download()
 {
-	var url = "http://api.cosm.com/v2/feeds/" + feedID + ".csv?";
-	url += "datastreams=" + $("#stream_list").val();
+	var url = "http://api.xively.com/v2/feeds/" + feedID; 
+	url += "/datastreams/" + $("#stream_list").val() + ".csv?";
 	url += "&duration=" + $("#duration_size").val() + $("#duration_units").val();
 	window.open(url, '_blank');
 }
