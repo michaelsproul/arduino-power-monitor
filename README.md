@@ -10,7 +10,7 @@ Updated by Michael Sproul for use with Xively (the service formerly known as Cos
 ## Parts List
 1. Current Cost 128 power monitor.  http://www.currentcost.com/product-envi.html  I got mine from:  http://www.smartnow.com.au/ 
 2. Arduino.  I used an Etherten from Freetronics:  http://www.freetronics.com/products/etherten
-3. A home made Serial Cable. RJ45 on one side to the Arduino on the other side of the cable. (to do: add more info here)
+3. A home made serial cable, RJ45->Arduino. Blue = Ground, Brown = Serial out
 4. A login account at www.xively.com
 5. This GIT repo
 6. A few Arduino libraries

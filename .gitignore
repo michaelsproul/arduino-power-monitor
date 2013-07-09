@@ -5,3 +5,8 @@ web/feed_details.js
 # Binaries, etc
 junk/*
 .build/*
+lib/.holder
+
+# Test program binaries
+serial-test/.build/*
+serial-test/lib/.holder
