@@ -20,7 +20,8 @@ Updated by Michael Sproul for use with Xively (the service formerly known as Cos
 Clone each libary into its own folder in `/usr/share/arduino/libraries`
 
 * The Xively library from https://github.com/xively/xively_arduino
-* The BufferedSerial library from https://code.google.com/p/arduino-buffered-serial/
+* The HttpClient library from https://github.com/amcewen/HttpClient
+* My version of the SoftwareSerial library, with a 128 byte buffer (included in the lib folder)
 
 The web page also uses the XivelyJS library (http://xively.github.io/xively-js/) and JQuery
 
