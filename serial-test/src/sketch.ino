@@ -37,6 +37,7 @@ void loop()
 	/* Every five loops, check for data and perform work */
 	if (timer == 5)
 	{
+		Serial.print("Timer reset");
 		/* Reset counter to 0 */
 		timer = 0;
 
