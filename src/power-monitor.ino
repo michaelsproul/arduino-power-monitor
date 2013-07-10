@@ -15,8 +15,13 @@
 /* ~~~~~~~~~~~~~~~~ */
 
 /* Networking details (add your ethernet shield's MAC address) */
-byte mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0x02, 0xC4 };
-byte ip[] = { 192, 168, 1, 212 };
+byte mac[] = {0x90, 0xA2, 0xDA, 0x00, 0x02, 0xC4};
+byte ip[] = {192, 168, 1, 212};
+byte gateway[] = {192, 168, 1, 254};
+
+/* Xively web client */
+EthernetClient client;
+XivelyClient xivelyclient(client);
 
 /* Define datastreams */
 char power_id[] = "Power";
@@ -35,10 +40,6 @@ XivelyDatastream datastreams[] =
 /* Wrap the datastreams into a feed */
 XivelyFeed feed(FEED_ID, datastreams, 4);
 
-/* Xively web client */
-EthernetClient client;
-XivelyClient xivelyclient(client);
-
 /* Software serial connection for the power meter */
 mSoftwareSerial ccSerial(CC_RX,CC_TX);
 
@@ -48,24 +49,32 @@ void setup()
 {
 	Serial.begin(9600);
 	Serial.println("Arduino Power Monitor, by Brian Lee & Michael Sproul");
-	Serial.println();
 
 	/* Initialise Arduino to CurrentCost meter serial */
 	ccSerial.begin(CC_BAUD);
 
 	/* Connect ethernet */
-	// Ethernet.begin(mac, ip);
-	// Serial.println("Ethernet connected successfully");
+	Ethernet.begin(mac, ip, gateway, gateway);
 }
 
 #include "xmlproc.h"
 
 void loop()
 {
+	/* If the buffer overflows, ignore the data */
+	/* (This is to deal with the 'historic' data sets) */
+	if (ccSerial.overflow())
+	{
+		state = DEFAULT_STATE;
+		while (ccSerial.available())
+		{
+			ccSerial.read();
+		}
+	}
+
 	while (ccSerial.available())
 	{
 		current_char = (char) ccSerial.read();
 		process_char(current_char);
 	}
-	/* Todo: deal with overflow */
 }

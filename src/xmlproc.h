@@ -27,6 +27,31 @@ char current_tag[BUF_SIZE];
 char desired_tag[BUF_SIZE] = TEMP_TAG;
 boolean onpeak = false;
 
+void push_to_xively()
+{
+	/* Total power */
+	datastreams[0].setInt(offpeakpower + peakpower);
+	/* Peak power */
+	datastreams[1].setInt(peakpower);
+	/* Off peak power */
+	datastreams[2].setInt(offpeakpower);
+	/* Temperature */
+	datastreams[3].setInt(temp);
+	/* Push to xively */
+	int retval = xivelyclient.put(feed, XIVELY_KEY);
+	if (retval != 0 && retval != 200)
+	{
+		Serial.println();
+		Serial.print("Error uploading data to Xively (Error code: ");
+		Serial.print(retval);
+		Serial.println(")");
+	}
+	else
+	{
+		Serial.println(" [uploaded]");
+	}
+}
+
 void state_message()
 {
 	switch (state) {
@@ -102,8 +127,6 @@ void process_tag_body(char c)
 		/* Data reporting, the good bit */
 		if (in_good_tag)
 		{
-			// Serial.print("Finished good tag: ");
-			// Serial.print(desired_tag);
 			/* Reset for the next run */
 			in_good_tag = 0;
 
@@ -126,14 +149,18 @@ void process_tag_body(char c)
 			{
 				offpeakpower = atoi(desired_data);
 
-				/* Temporary */
+				/* Print data to console */
 				Serial.print("temp: ");
 				Serial.print(temp);
 				Serial.print(" peak: ");
 				Serial.print(peakpower);
 				Serial.print(" offpeak: ");
 				Serial.print(offpeakpower);
-				Serial.println();
+
+				/* Upload data */
+				push_to_xively();
+
+				/* Reset for next time */
 				temp = 0;
 				peakpower = 0;
 				offpeakpower = 0;
