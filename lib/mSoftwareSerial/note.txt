@@ -1,8 +1,0 @@
-This library is almost identical to the SoftwareSerial library included with Arduino 1.0.5.
-I've  modified the size of the buffer to 128 bytes (from 64) to suit this project.
-So far, this seems to be fine.
-
-Unfortunately, overriding the buffer size constant from the project itself doesn't work.
-(Presumably because ino & avr-gcc don't do multiple pre-processor scans, or something)
-
-#define _SS_MAX_RX_BUFF 128

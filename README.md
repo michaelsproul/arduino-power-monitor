@@ -21,12 +21,13 @@ Clone each libary into its own folder in `/usr/share/arduino/libraries`
 
 * The Xively library from https://github.com/xively/xively_arduino
 * The HttpClient library from https://github.com/amcewen/HttpClient
-* My version of the SoftwareSerial library, with a 128 byte buffer (included in the lib folder)
 
 The web page also uses the XivelyJS library (http://xively.github.io/xively-js/) and JQuery
 
 ## Building
 Add your Xively feed details in the necessary places, modify ino.ini to reflect the arduino you've got, then run `ino build`.
+
+You can also edit `~/.inorc' to set your Ino preferences globally.
 
 ## Reference material
 * Info on the data from the Cust Cost serial port: http://www.currentcost.com/download/Envi%20XML%20v19%20-%202011-01-11.pdf

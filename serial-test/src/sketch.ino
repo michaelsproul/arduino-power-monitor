@@ -1,6 +1,7 @@
-#include <mSoftwareSerial.h>
+#include <SoftwareSerial.h>
+#define _SS_MAX_RX_BUFFER 128
 
-mSoftwareSerial ccSerial(2,3);
+SoftwareSerial ccSerial(2,3);
 char buffer[256];
 int i = 0;
 char c;
@@ -14,6 +15,16 @@ void setup()
 }
 
 void loop()
+{
+	while (ccSerial.available())
+	{
+		c = (char) ccSerial.read();
+		Serial.print(c);
+	}
+}
+
+/* This is horrible and dirty */
+void old_loop()
 {
 	overflowed = false;
 

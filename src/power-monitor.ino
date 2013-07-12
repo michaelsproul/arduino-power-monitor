@@ -1,4 +1,5 @@
-#include <mSoftwareSerial.h>
+#include <SoftwareSerial.h>
+#define _SS_MAX_RX_BUFF 128
 #include <Ethernet.h>
 #include <HttpClient.h>
 #include <Xively.h>
@@ -41,7 +42,7 @@ XivelyDatastream datastreams[] =
 XivelyFeed feed(FEED_ID, datastreams, 4);
 
 /* Software serial connection for the power meter */
-mSoftwareSerial ccSerial(CC_RX,CC_TX);
+SoftwareSerial ccSerial(CC_RX,CC_TX);
 
 char current_char;
 
@@ -55,6 +56,8 @@ void setup()
 
 	/* Connect ethernet */
 	Ethernet.begin(mac, ip, gateway, gateway);
+	Serial.print("Using a buffer size of ");
+	Serial.println(_SS_MAX_RX_BUFF);
 }
 
 #include "xmlproc.h"

@@ -1,1 +1,0 @@
-Create a symlink to the mSoftwareSerial library in the root's lib folder.
