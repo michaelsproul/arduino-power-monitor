@@ -1,5 +1,5 @@
 # Personal details
-src/xively-pass.h
+src/auth.h
 web/feed_details.js
 
 # Binaries, etc

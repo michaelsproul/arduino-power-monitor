@@ -12,10 +12,18 @@
 #define TEMP_TAG "tmpr"
 #define POWER_TAG "watts"
 
+/* How many points to collect before uploading */
+#define UPDATE_INTERVAL 4
+
 /* Data containers */
-int offpeakpower;
-int peakpower;
 int temp;
+int peakpower;
+int offpeakpower;
+
+/* Cumulative data, gets averaged on upload */
+int c_temp;
+int c_peak;
+int c_offpeak;
 
 /* Processing variables */
 int state = DEFAULT_STATE;
@@ -23,35 +31,66 @@ int in_good_tag = 0;
 char desired_data[BUF_SIZE];
 char current_tag[BUF_SIZE];
 
-/* Cycle through temp, peak, offpeak */
+/* Variables to track the cycling through temp, peak, offpeak */
 char desired_tag[BUF_SIZE] = TEMP_TAG;
 boolean onpeak = false;
+int cycle_pos = 1;
 
-void push_to_xively()
+/* The formatted upload string */
+char fdata[50];
+
+/* Track connection quality */
+int failed_connections = 0;
+
+/* A function to format the data for the HTTP request */
+void format_data()
 {
-	/* Total power */
-	datastreams[0].setInt(offpeakpower + peakpower);
-	/* Peak power */
-	datastreams[1].setInt(peakpower);
-	/* Off peak power */
-	datastreams[2].setInt(offpeakpower);
-	/* Temperature */
-	datastreams[3].setInt(temp);
-	/* Push to xively */
-	int retval = xivelyclient.put(feed, XIVELY_KEY);
-	if (retval != 0 && retval != 200)
+	int total = peakpower + offpeakpower;
+	snprintf(fdata, 50, "field1=%d&field2=%d&field3=%d&field4=%d",
+				total, peakpower, offpeakpower, temp);
+}
+
+/* A function to upload the data to ThingSpeak */
+void upload_data()
+{
+	format_data();
+	int data_length = strlen(fdata);
+
+	if (client.connect(THINGSPEAK_URL, 80))
 	{
-		Serial.println();
-		Serial.print("Error uploading data to Xively (Error code: ");
-		Serial.print(retval);
-		Serial.println(")");
+		client.println("POST /update HTTP/1.1");
+		client.print("Host: ");
+		client.println(THINGSPEAK_URL);
+		client.println("Connection: close");
+		client.print("X-THINGSPEAKAPIKEY: ");
+		client.println(THINGSPEAK_KEY);
+		client.println("Content-Type: application/x-www-form-urlencoded");
+		client.print("Content-Length: ");
+		client.println(data_length);
+		client.println();
+		client.println(fdata);
+
+		if (client.connected())
+		{
+			Serial.println("[uploaded succeeded]");
+			failed_connections = 0;
+			client.stop();
+		}
+		else
+		{
+			Serial.println("[upload failed: connection dropped]");
+			failed_connections++;
+			client.stop();
+		}
 	}
 	else
 	{
-		Serial.println(" [uploaded]");
+		failed_connections++;
+		Serial.println("[upload failed: connection refused]");
 	}
 }
 
+#ifdef _DEBUG
 void state_message()
 {
 	switch (state) {
@@ -75,11 +114,11 @@ void state_message()
 		break;
 	}
 }
+#endif
 
 void change_state(int new_state)
 {
 	state = new_state;
-	// state_message();
 }
 
 void process_start_tag(char c)
@@ -88,7 +127,6 @@ void process_start_tag(char c)
 	case '>':
 		if (strcmp(current_tag, desired_tag) == 0)
 		{
-			// Serial.println("FOUND A TAG MATCH");
 			in_good_tag = 1;
 		}
 		current_tag[0] = '\0';
@@ -133,9 +171,9 @@ void process_tag_body(char c)
 			/* Temperature */
 			if (strcmp(desired_tag, TEMP_TAG) == 0)
 			{
-				// Serial.println("Processing temperature");
 				temp = atoi(desired_data);
 				strcpy(desired_tag, POWER_TAG);
+				/* TODO: change to a pointer */
 				onpeak = true;
 			}
 			/* Peak power */
@@ -155,15 +193,34 @@ void process_tag_body(char c)
 				Serial.print(" peak: ");
 				Serial.print(peakpower);
 				Serial.print(" offpeak: ");
-				Serial.print(offpeakpower);
+				Serial.println(offpeakpower);
 
-				/* Upload data */
-				push_to_xively();
+				/* Add data to cumulative totals */
+				c_temp += temp;
+				c_peak += peakpower;
+				c_offpeak += offpeakpower;
 
-				/* Reset for next time */
+				/* Upload data every so often */
+				if (cycle_pos == UPDATE_INTERVAL)
+				{
+					/* Calculate averages */
+					temp = c_temp/UPDATE_INTERVAL;
+					peakpower = c_peak/UPDATE_INTERVAL;
+					offpeakpower = c_offpeak/UPDATE_INTERVAL;
+
+					upload_data();
+
+					/* Reset */
+					c_temp = 0;
+					c_peak = 0;
+					c_offpeak = 0;
+				}
+
+				/* Reset for next run */
 				temp = 0;
 				peakpower = 0;
 				offpeakpower = 0;
+				cycle_pos = 1 + (cycle_pos % UPDATE_INTERVAL);
 				strcpy(desired_tag, TEMP_TAG);
 			}
 
@@ -218,7 +275,6 @@ void process_default(char c)
 
 int process_char(char c)
 {
-	// Serial.print(c);
 	switch (state)
 	{
 		case IN_START_TAG:
