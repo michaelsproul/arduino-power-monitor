@@ -9,9 +9,6 @@
 #define DEFAULT_STATE 30
 #define IN_GENERIC_TAG 40
 
-#define TEMP_TAG "tmpr"
-#define POWER_TAG "watts"
-
 /* How many points to collect before uploading */
 #define UPDATE_INTERVAL 4
 
@@ -32,7 +29,9 @@ char desired_data[BUF_SIZE];
 char current_tag[BUF_SIZE];
 
 /* Variables to track the cycling through temp, peak, offpeak */
-char desired_tag[BUF_SIZE] = TEMP_TAG;
+char temp_tag[] = "tmpr";
+char power_tag[] = "watts";
+char *desired_tag = temp_tag;
 boolean onpeak = false;
 int cycle_pos = 1;
 
@@ -41,6 +40,8 @@ char fdata[50];
 
 /* Track connection quality */
 int failed_connections = 0;
+
+/* --------------------------- */
 
 /* A function to format the data for the HTTP request */
 void format_data()
@@ -169,10 +170,10 @@ void process_tag_body(char c)
 			in_good_tag = 0;
 
 			/* Temperature */
-			if (strcmp(desired_tag, TEMP_TAG) == 0)
+			if (strcmp(desired_tag, temp_tag) == 0)
 			{
 				temp = atoi(desired_data);
-				strcpy(desired_tag, POWER_TAG);
+				desired_tag = power_tag;
 				/* TODO: change to a pointer */
 				onpeak = true;
 			}
@@ -221,7 +222,7 @@ void process_tag_body(char c)
 				peakpower = 0;
 				offpeakpower = 0;
 				cycle_pos = 1 + (cycle_pos % UPDATE_INTERVAL);
-				strcpy(desired_tag, TEMP_TAG);
+				desired_tag = temp_tag;
 			}
 
 			/* Reset data buffer */
