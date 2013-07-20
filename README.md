@@ -25,10 +25,16 @@ Since changing from Xively to ThingSpeak, no extra libraries are required!
 
 ## Building
 
-Add your ThingSpeak API key in the necessary places, modify ino.ini to reflect the Arduino you've got, 
-then run `ino build`.
+Add your ThingSpeak API key in the necessary place(s), modify ino.ini to reflect the Arduino you've 
+got, and run `ino build && ino upload && ino serial`.
 
 You can also edit `~/.inorc` to set your Ino preferences globally.
+
+## Testing
+
+If you want to test your setup without parsing the data or uploading it to ThingSpeak you can build and 
+run the project in the serial-test directory. Run `ino build && ino upload && ino serial` from the 
+serial-test directory and you'll see the XML output from the meter (hopefully).
 
 ## Reference material
 
