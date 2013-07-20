@@ -99,18 +99,6 @@ void loop()
 	if (overflowed || ccSerial.overflow())
 	{
 		Serial.println("Historical data received");
-
-		/* Print buffer */
-		for (int j = 0; j < BUFFER_SIZE; j++)
-		{
-			Serial.print(buffer[j]);
-		}
-
-		/* Dump junk data */
-		while (ccSerial.available())
-		{
-			Serial.print((char) ccSerial.read());
-		}
 	}
 	else
 	{

@@ -78,7 +78,7 @@ void upload_data()
 
 		if (client.connected())
 		{
-			Serial.println("[uploaded succeeded]");
+			Serial.println("[upload succeeded]");
 			failed_connections = 0;
 			client.stop();
 		}
