@@ -1,11 +1,15 @@
 #include <SoftwareSerial.h>
-#define _SS_MAX_RX_BUFFER 128
+#define BUFFER_SIZE 512
+
+/* Max time to wait between bits of a message (milliseconds) */
+#define MSG_DELAY 400
 
 SoftwareSerial ccSerial(2,3);
-char buffer[256];
+char buffer[BUFFER_SIZE];
+unsigned long t_lastread = 0;
 int i = 0;
 char c;
-int timer = 0;
+boolean waiting = true;
 boolean overflowed = false;
 
 void setup()
@@ -16,62 +20,46 @@ void setup()
 
 void loop()
 {
-	while (ccSerial.available())
+	/*
+	 * The incoming message appears on the SoftwareSerial buffer
+	 * in several parts separated by small time intervals.
+	 * Wait for the whole message to arrive before processing
+	 */
+	while ((millis() - t_lastread < MSG_DELAY || waiting) && !overflowed)
 	{
-		c = (char) ccSerial.read();
-		Serial.print(c);
-	}
-}
-
-/* This is horrible and dirty */
-void old_loop()
-{
-	overflowed = false;
-
-	if (ccSerial.available())
-	{
-		while (ccSerial.available())
+		if (ccSerial.available())
 		{
-			c = (char) ccSerial.read();
-			buffer[i] = c;
-			i++;
-		}
-	}
-
-	if (ccSerial.overflow())
-	{
-		overflowed = true;
-	}
-
-	timer++;
-
-	/* Every five loops, check for data and perform work */
-	if (timer == 5)
-	{
-		Serial.print("Timer reset");
-		/* Reset counter to 0 */
-		timer = 0;
-
-		/* If the buffer is empty, do nothing */
-		if (i == 0)
-		{
-			/* nothing */
-		}
-		else if (overflowed)
-		{
-			/* nothing */
-		}
-		else
-		{
-			/* Print the buffer */
-			int last = i;
-			for (i = 0; i < last; i++)
+			while (ccSerial.available())
 			{
-				Serial.print(buffer[i]);
+				if (i == BUFFER_SIZE)
+				{
+					overflowed = true;
+					break;
+				}
+
+				buffer[i] = (char) ccSerial.read();
+				i++;
 			}
 
-			/* Reset the buffer */
-			i = 0;
+			if (waiting) { waiting = false; }
+
+			t_lastread = millis();
 		}
 	}
+
+	if (overflowed || ccSerial.overflow())
+	{
+		Serial.println("A buffer overflowed.");
+	}
+
+	/* Process the message */
+	for (int j = 0; j < i; j++)
+	{
+		Serial.print(buffer[j]);
+	}
+
+	/* Reset */
+	i = 0;
+	waiting = true;
+	overflowed = false;
 }
