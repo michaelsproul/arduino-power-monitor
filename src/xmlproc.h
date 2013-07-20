@@ -1,7 +1,11 @@
 #ifndef _XMLPROC
 #define _XMLPROC
 
-#define BUF_SIZE 30
+/* Maximum length for an xml tag or field */
+#define XML_BUF 30
+
+/* Maximum length for the HTTP request body */
+#define HTTP_LENGTH 60
 
 #define IN_START_TAG 0
 #define IN_END_TAG 10
@@ -10,9 +14,9 @@
 #define IN_GENERIC_TAG 40
 
 /* How many points to collect before uploading */
-#define UPDATE_INTERVAL 4
+#define UPDATE_INTERVAL 1
 
-/* Data containers */
+/* Ze data! */
 int temp;
 int peakpower;
 int offpeakpower;
@@ -24,9 +28,9 @@ int c_offpeak;
 
 /* Processing variables */
 int state = DEFAULT_STATE;
-int in_good_tag = 0;
-char desired_data[BUF_SIZE];
-char current_tag[BUF_SIZE];
+boolean in_good_tag = false;
+char desired_data[XML_BUF];
+char current_tag[XML_BUF];
 
 /* Variables to track the cycling through temp, peak, offpeak */
 char temp_tag[] = "tmpr";
@@ -36,9 +40,9 @@ boolean onpeak = false;
 int cycle_pos = 1;
 
 /* The formatted upload string */
-char fdata[50];
+char fdata[HTTP_LENGTH];
 
-/* Track connection quality */
+/* Watch the connection quality */
 int failed_connections = 0;
 
 /* --------------------------- */
@@ -49,6 +53,7 @@ void format_data()
 	int total = peakpower + offpeakpower;
 	snprintf(fdata, 50, "field1=%d&field2=%d&field3=%d&field4=%d",
 				total, peakpower, offpeakpower, temp);
+	Serial.println(fdata);
 }
 
 /* A function to upload the data to ThingSpeak */
@@ -86,8 +91,9 @@ void upload_data()
 	}
 	else
 	{
-		failed_connections++;
 		Serial.println("[upload failed: connection refused]");
+		failed_connections++;
+		client.stop();
 	}
 }
 
@@ -111,7 +117,7 @@ void state_message()
 		Serial.println("tag body mode");
 		break;
 	default:
-		Serial.print("NULLL BADD");
+		Serial.print("something is very wrong");
 		break;
 	}
 }
@@ -128,14 +134,14 @@ void process_start_tag(char c)
 	case '>':
 		if (strcmp(current_tag, desired_tag) == 0)
 		{
-			in_good_tag = 1;
+			in_good_tag = true;
 		}
 		current_tag[0] = '\0';
 		change_state(DEFAULT_STATE);
 		break;
 	default:
 		/* Add the character to the current tag name */
-		if (strlen(current_tag) < BUF_SIZE)
+		if (strlen(current_tag) < XML_BUF)
 		{
 			strncat(current_tag, &c, 1);
 		}
@@ -167,17 +173,16 @@ void process_tag_body(char c)
 		if (in_good_tag)
 		{
 			/* Reset for the next run */
-			in_good_tag = 0;
+			in_good_tag = false;
 
-			/* Temperature */
-			if (strcmp(desired_tag, temp_tag) == 0)
+			/* Temperature mode */
+			if (desired_tag == temp_tag)
 			{
-				temp = atoi(desired_data);
+				temp = atof(desired_data);
 				desired_tag = power_tag;
-				/* TODO: change to a pointer */
 				onpeak = true;
 			}
-			/* Peak power */
+			/* Peak power mode */
 			else if (onpeak)
 			{
 				peakpower = atoi(desired_data);
@@ -189,12 +194,12 @@ void process_tag_body(char c)
 				offpeakpower = atoi(desired_data);
 
 				/* Print data to console */
-				Serial.print("temp: ");
-				Serial.print(temp);
-				Serial.print(" peak: ");
+				Serial.print("peak: ");
 				Serial.print(peakpower);
 				Serial.print(" offpeak: ");
-				Serial.println(offpeakpower);
+				Serial.print(offpeakpower);
+				Serial.print(" temp: ");
+				Serial.println(temp);
 
 				/* Add data to cumulative totals */
 				c_temp += temp;
@@ -212,7 +217,7 @@ void process_tag_body(char c)
 					upload_data();
 
 					/* Reset */
-					c_temp = 0;
+					c_temp = 0.0;
 					c_peak = 0;
 					c_offpeak = 0;
 				}

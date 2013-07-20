@@ -8,7 +8,6 @@ SoftwareSerial ccSerial(2,3);
 char buffer[BUFFER_SIZE];
 unsigned long t_lastread = 0;
 int i = 0;
-char c;
 boolean waiting = true;
 boolean overflowed = false;
 
