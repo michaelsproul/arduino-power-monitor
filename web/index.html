@@ -1,62 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>
-Energy Monitoring | Sproul
-</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>  
-<script src="http://d23cj0cdvyoxg0.cloudfront.net/xivelyjs-1.0.4.min.js"></script> 
-<script type="text/javascript" src="feed_details.js"></script>
-<script type="text/javascript" src="calc.js"></script>
-<link rel="stylesheet" type="text/css" href="style.css">
-<link href='http://fonts.googleapis.com/css?family=Droid+Sans:400,700' rel='stylesheet' type='text/css'>
-</head>
-<body>
-<h1>
-Energy Monitoring
-</h1>
-<div id="content">
-<h2>Stats</h2>
-<p>
-Current power usage: <span id="currentpower"></span> W
-<br>
-<br>
-<b>Energy usage</b><br>
-Last 6 hours: <span id="energy6h"></span> kWh<br>
-Last 12 hours: <span id="energy12h"></span> kWh<br>
-Last 24 hours: <span id="energy24h"></span> kWh<br>
-Last <input id="energyxh_input" type="number" onchange="recalc_variable_energy()"> hours: <span id="energyxh"></span> kWh<br>
-<button onclick="recalc_variable_energy()">Recalculate</button>
-</p>
-<h2>Download data</h2>
-<p>
-Which feed?
-<select id="stream_list">
-<option value="0">Temperature</option>
-<option value="Power" selected="selected">Power</option>
-</select>
-<br>
-Over what time period?*
-<input id="duration_size">
-<select id="duration_units">
-<option value="seconds">seconds</option>
-<option value="minutes">minutes</option>
-<option value="hours" selected="selected">hours</option>
-<option value="days">days</option>
-</select>
-<br>
-<button id="download_button" type="button" onclick="download()">Download</button>
-<br>
-<br>
-<span class="aside">
-*Counting backwards from now. More features coming soon!
-<br><br>
-Note: If you have trouble downloading data make sure you've logged into xively first
-</span>
-<br>
-<div id="footer">Michael Sproul, data at <a href="https://xively.com/feeds/33611" target="_blank">https://xively.com/feeds/yoyoy</a></div>
-</p>
-</div>
-</body>
-</html>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Sproul House Energy Monitoring">
+	<meta name="author" content="Michael Sproul">
 
+	<title>Energy Monitoring</title>
+
+	<!-- Bootstrap core CSS -->
+	<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
+	<!-- Custom styles -->
+	<link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+	<div class="navbar navbar-inverse navbar-fixed-top">
+	  <div class="container">
+		<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+		  <span class="icon-bar"></span>
+		  <span class="icon-bar"></span>
+		  <span class="icon-bar"></span>
+		</button>
+		<a class="navbar-brand" href="#">Energy Monitoring</a>
+		<div class="nav-collapse collapse">
+		  <ul class="nav navbar-nav">
+			<li class="active"><a href="#">Live</a></li>
+			<li><a href="#historic">Historic</a></li>
+			<li><a href="#about">About</a></li>
+		  </ul>
+		</div><!--/.nav-collapse -->
+	  </div>
+	</div>
+
+	<div class="container content">
+		<div class="jumbotron row">
+			<div class="col-lg-4">
+			<h2>Live Power</h2>
+			<h1><span id="totalpower">0</span><small> W</small></h1>
+			</div>
+
+			<div class="col-lg-4">
+			<h2>Daily Energy</h2>
+			<h1>8.67 <small>kWh</small></h1>
+			<h3><small>7.04 kWh per day on average</small></h3>
+			</div>
+
+			<div class="col-lg-4">
+			<h2>Off-peak hot water</h2>
+			<h1>2.45 <small>kWh</small></h1>
+			<h3><small>2.00 kWh per day on average</small></h3>
+			</div>
+		</div>
+	</div><!-- /.container -->
+
+	<!-- JQuery and Bootstrap -->
+	<script src="http://code.jquery.com/jquery.js"></script>
+	<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+	
+	<!-- ThingSpeak data processing scripts -->
+	<script src="feed_details.js"></script>
+	<script src="calc.js"></script>
+  </body>
+</html>

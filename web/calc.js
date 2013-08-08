@@ -1,81 +1,18 @@
-/* This file requires 3 global variables specific to your feed: */
-/* xively_key (the API key), feedID (your feed ID) and datastreamID */
-
-// Data points every 5 minutes
-var global_interval = 300;
+// ThingSpeak url: Define your channel and read key in a separate file
+var thingspeakUrl = "http://api.thingspeak.com/channels/" + channel + "/";
 
 $(document).ready(function($) {
-	init();
-	live_power();
-	// last_x_hours(6, "#energy6h");
-	// last_x_hours(12, "#energy12h");
-	// last_x_hours(24, "#energy24h");
+	getLivePower();
+	setInterval('getLivePower()', 10000);
 });
 
-function init()
-{
-	xively.setKey(xively_key);
-}
-
-function recalc_variable_energy()
-{
-	last_x_hours($("#energyxh_input").val(), "#energyxh");
-}
-
-function live_power()
-{
-	var selector = "#currentpower";
-	xively.datastream.get(feedID, datastreamID, function (datastream) {
-		// Set the current power field		
-		$(selector).html(datastream["current_value"]);
-		
-		// Keep it in sync with realtime data
-		xively.datastream.subscribe(feedID, datastreamID, function (event, datastream_updated) { 
-      			$(selector).html(datastream_updated["current_value"]);
-    		});
-	});
-}
-
-function last_x_hours(hours, selector)
-{
-	var rightnow = new Date();	
-	var options = {
-		end: rightnow.toISOString(),
-		duration: hours + "hours",
-		limit: 1000,
-		interval: global_interval
-	};
-	xively.datastream.history (feedID, datastreamID, options, function(data) {
-			var energy = 0;
-			for (x in data.datapoints) {
-				energy += parseInt(data.datapoints[x].value)/ (12*1000);
-				// 5 minutes is 1/12th of an hour, and a W is 1000th of a kW
-			}
-			// Cleanup the value before displaying it
-			energy = Math.round(energy*100) / 100;
-			$(selector).html(energy);
+function getLivePower() {
+	var url = thingspeakUrl + "feeds/last.json?callback=?&offset=10&key=" + readKey;
+	$.getJSON(url, function(data) {
+		if (data.field1) {
+			$("#totalpower").html(data.field1);
+			$("#peakpower").html(data.field2);
+			$("#offpeakpower").html(data.field3);	
 		}
-	);
-}
-
-// TODO: Fix this?
-function populate_lists()
-{
-	var stream_options = $("#stream_list");	
-	xively.datastream.list(feedID, function(data) {
-		for (x in data.datastreams) {
-			alert("HELLLO!");	
-		}			
 	});
 }
-
-function download()
-{
-	var url = "http://api.xively.com/v2/feeds/" + feedID; 
-	url += "/datastreams/" + $("#stream_list").val() + ".csv?";
-	url += "&duration=" + $("#duration_size").val() + $("#duration_units").val();
-	window.open(url, '_blank');
-}
-
-
-

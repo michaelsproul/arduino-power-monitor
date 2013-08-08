@@ -1,8 +1,2 @@
-body {background-color:#e0e5db; font-family: 'Droid Sans', sans-serif; color:#505050}
-h1 {text-align:center; color:#67a826}
-.aside {font-size:11px}
-#duration_size {width:100px}
-#content {margin-left:1.5%}
-#download_button {margin: auto}
-#energyxh {width:3%}
-#footer {text-align:right; font-size:11px; margin-right:1.5%}
+body { padding-top: 80px; }
+content {text-align: center; }
