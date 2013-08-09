@@ -12,6 +12,8 @@
 	<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
 	<!-- Custom styles -->
 	<link href="style.css" rel="stylesheet">
+	<script src="https://raw.github.com/DmitryBaranovskiy/raphael/master/raphael-min.js"></script>
+	<script src="https://raw.github.com/jcarver989/raphy-charts/master/compiled/charts.min.js"></script>
 </head>
 
 <body>
@@ -25,33 +27,35 @@
 		<a class="navbar-brand" href="#">Energy Monitoring</a>
 		<div class="nav-collapse collapse">
 		  <ul class="nav navbar-nav">
-			<li class="active"><a href="#">Live</a></li>
-			<li><a href="#historic">Historic</a></li>
-			<li><a href="#about">About</a></li>
+			<li class="active"><a href="#">Summary</a></li>
+			<li><a href="#powerchart">Graphs</a></li>
 		  </ul>
 		</div><!--/.nav-collapse -->
 	  </div>
 	</div>
 
-	<div class="container content">
+	<div class="container">
 		<div class="jumbotron row">
 			<div class="col-lg-4">
-			<h2>Live Power</h2>
+			<h2>Power</h2>
 			<h1><span id="totalpower">0</span><small> W</small></h1>
+			<h3><small>Peak: <span id="peakpower">0</span> W
+			Off-peak:<span id="offpeakpower">0</span> W</small></h3>
 			</div>
 
 			<div class="col-lg-4">
-			<h2>Daily Energy</h2>
-			<h1>8.67 <small>kWh</small></h1>
+			<h2>Today</h2>
+			<h1>8.67<small>kWh</small></h1>
 			<h3><small>7.04 kWh per day on average</small></h3>
 			</div>
 
 			<div class="col-lg-4">
-			<h2>Off-peak hot water</h2>
+			<h2>Hot water</h2>
 			<h1>2.45 <small>kWh</small></h1>
 			<h3><small>2.00 kWh per day on average</small></h3>
 			</div>
 		</div>
+		<div id="powerchart" style="width: 1200px; height: 600px;"></div>
 	</div><!-- /.container -->
 
 	<!-- JQuery and Bootstrap -->

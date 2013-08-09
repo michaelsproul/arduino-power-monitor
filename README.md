@@ -7,7 +7,7 @@ ThingSpeak using an Arduino.
 ## About
 
 Updated by Michael Sproul for use with Thingspeak and the Python based CLI build tool, `ino`. Based on 
-original code by Brian Lee (bleep1)
+[original code](https://github.com/bleep1/CurrentCostToCosmViaArduino) by Brian Lee (bleep1)
 
 ## Parts List
 
