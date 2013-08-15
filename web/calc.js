@@ -7,20 +7,8 @@ var fields = {totalpower: 1, peak: 2, offpeak: 3, temp:4};
 $(document).ready(function($) {
 	getLivePower();
 	setInterval('getLivePower()', 30000);
-
-	// Calculate stats for today
-	var download = getData(daysAgo(20), fields.totalpower);
-	$.when(download.handler).done(function(junk) {
-		// Calculate energy usage
-		$("#energytoday").html("Calculating...");
-		var energy = calcEnergy(download.data);
-		energy = Math.round(energy*100)/100;
-		$("#energytoday").html(energy);
-
-		// Graph power usage
-		var chartData = timeAverage(download.data, 100);
-		graphData('powerchart', chartData);
-	});
+	calcDailyEnergy();
+	calcHotWater();
 });
 
 // Fetch the latest power data and update the page accordingly.
@@ -32,6 +20,31 @@ function getLivePower() {
 			$("#peakpower").html(data.field2);
 			$("#offpeakpower").html(data.field3);	
 		}
+	});
+}
+
+// Calculate the off-peak hotwater energy usage
+function calcHotWater() {
+	var download = getData(offPeakTime(), fields.offpeak);
+	$.when(download.handler).done(function(junk) {
+		var energy = calcEnergy(download.data);
+		energy = Math.round(energy*100)/100;
+		$("#hotwater").html(energy);
+	});
+}
+
+// Calculate the energy used so far today.
+function calcDailyEnergy() {
+	var download = getData(daysAgo(0), fields.totalpower);
+	$.when(download.handler).done(function(junk) {
+		var energy = calcEnergy(download.data);
+		energy = Math.round(energy*100)/100;
+		$("#energytoday").html(energy);
+
+		// Graph power usage
+		chartData = timeAverage(download.data, 600);
+		// console.log(chartData);
+		graphData('powergraph', chartData);
 	});
 }
 
@@ -58,6 +71,23 @@ function daysAgo(x) {
 	return {start: start, end: end};
 }
 
+// Create a time interval for last night's off peak period (10pm-7am)
+function offPeakTime() {
+	var start = new Date();
+	var end = new Date();
+
+	end.setDate(end.getDate() - 1);
+	end.setHours(22);
+	end.setMinutes(0);
+	end.setSeconds(0);
+
+	end.setHours(7);
+	end.setMinutes(0);
+	end.setSeconds(0);
+
+	return {start: start, end: end};
+}
+
 // Fetch a single field's data for a given start and end time.
 function getData(time, fieldNumber) {
 	var url = thingspeakURL + "field/" + fieldNumber + ".json";
@@ -80,25 +110,37 @@ function getData(time, fieldNumber) {
 }
 
 // Condense a large data set into a smaller, time averaged data set.
-function timeAverage(data, skip) {
-	var l = data.length;	
+// The given interval, in seconds, defines the minimum spacing between data points in the output.
+function timeAverage(data, interval) {
+	var l = data.length;
 	var newData = [];
-	
-	for (var i = 0; i < l - 1; i += skip) {
+
+	var i = 0;
+
+	while (i < l - 1) {
+		// Setup the start and end points for this interval
+		var start = data[i][0];
+		var intervalEnd = new Date(start.getTime());
+		intervalEnd.setSeconds(intervalEnd.getSeconds() + interval);
+
+		// Calculate the weighted average of the power over the interval
 		var durationSum = 0.0; // seconds
 		var weightedPower = 0.0; // watt seconds (J)
-		for (var j = i; j < i + skip && j < l - 1; j++) {
-			var duration = data[j + 1][0].getTime();
-			duration -= data[j][0].getTime();
+
+		while (data[i][0] < intervalEnd && i < l - 1) {
+			var duration = data[i + 1][0].getTime();
+			duration -= data[i][0].getTime();
 			duration /= 1000;
 			durationSum += duration;
-			weightedPower += data[j][1]*duration;
+			weightedPower += data[i][1]*duration;		
+			i++;
 		}
 		var avgPower = weightedPower/durationSum;
 		avgPower = Math.round(avgPower);
-		var midDate = data[i][0];
-		newData.push([midDate, avgPower]);
+		// Use the start of the interval as the timestamp. 
+		newData.push([start, avgPower]);	
 	}
+
 	return newData;
 }
 

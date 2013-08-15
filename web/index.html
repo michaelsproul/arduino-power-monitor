@@ -12,8 +12,8 @@
 	<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
 	<!-- Custom styles -->
 	<link href="style.css" rel="stylesheet">
-	<script src="https://raw.github.com/DmitryBaranovskiy/raphael/master/raphael-min.js"></script>
-	<script src="https://raw.github.com/jcarver989/raphy-charts/master/compiled/charts.min.js"></script>
+	<script type="text/javascript" src="raphael/raphael-min.js"></script>
+	<script type="text/javascript" src="raphy-charts/compiled/charts.min.js"></script>
 </head>
 
 <body>
@@ -28,7 +28,8 @@
 		<div class="nav-collapse collapse">
 		  <ul class="nav navbar-nav">
 			<li class="active"><a href="#">Summary</a></li>
-			<li><a href="#powerchart">Graphs</a></li>
+			<li><a href="#graph">Graphs</a></li>
+			<li><a href="#download">Download</a></li>
 		  </ul>
 		</div><!--/.nav-collapse -->
 	  </div>
@@ -46,7 +47,7 @@
 			<div class="col-lg-4">
 			<h2>Today</h2>
 			<h1><span id="energytoday">0</span><small> kWh</small></h1>
-			<h3><small>7.04 kWh per day on average</small></h3>
+			<h3><small>8.46 kWh per day on average</small></h3>
 			</div>
 
 			<div class="col-lg-4">
@@ -55,15 +56,18 @@
 			<h3><small>2.00 kWh per day on average</small></h3>
 			</div>
 		</div>
-		<div id="powerchart" class="col-lg-12" style="width: 1200px;"></div>
+		<h2 id="graph">Power graph for <span id="day">today</span></h2>
+		<!-- For some strange reason the style must be set here for Raphael to work properly! CSS breaks it! -->
+		<div id="powergraph" style="width: 1000px; height: 800px"></div>
 	</div><!-- /.container -->
 
 	<!-- JQuery and Bootstrap -->
-	<script src="http://code.jquery.com/jquery.js"></script>
-	<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery.js"></script>
+	<script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
 	
 	<!-- ThingSpeak data processing scripts -->
 	<script src="feed_details.js"></script>
 	<script src="calc.js"></script>
+	<script src="misc.js"></script>
   </body>
 </html>
