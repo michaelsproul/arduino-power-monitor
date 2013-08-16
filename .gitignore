@@ -8,3 +8,6 @@ junk/*
 
 # Test program binaries
 serial-test/.build/*
+
+# Packaged site stuff
+web/*.zip

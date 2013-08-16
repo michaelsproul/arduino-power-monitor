@@ -8,9 +8,8 @@
 
 	<title>Energy Monitoring</title>
 
-	<!-- Bootstrap core CSS -->
 	<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
-	<!-- Custom styles -->
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
 	<link href="style.css" rel="stylesheet">
 	<script type="text/javascript" src="raphael/raphael-min.js"></script>
 	<script type="text/javascript" src="raphy-charts/compiled/charts.min.js"></script>
@@ -27,8 +26,8 @@
 		<a class="navbar-brand" href="#">Energy Monitoring</a>
 		<div class="nav-collapse collapse">
 		  <ul class="nav navbar-nav">
-			<li class="active"><a href="#">Summary</a></li>
-			<li><a href="#graph">Graphs</a></li>
+			<li class="active"><a href="#summary">Summary</a></li>
+			<li><a href="#graph">Graph</a></li>
 			<li><a href="#download">Download</a></li>
 		  </ul>
 		</div><!--/.nav-collapse -->
@@ -36,17 +35,17 @@
 	</div>
 
 	<div class="container">
-		<div class="jumbotron row">
+		<div id="summary" class="jumbotron row">
 			<div class="col-lg-4">
 			<h2>Power</h2>
-			<h1><span id="totalpower">0</span><small> W</small></h1>
-			<h3><small>Peak: <span id="peakpower">0</span> W
-			Off-peak:&nbsp;<span id="offpeakpower">0</span> W</small></h3>
+			<h1><span id="total-power">0</span><small> W</small></h1>
+			<h3><small>Peak: <span id="peak-power">0</span> W
+			Off-peak:&nbsp;<span id="offpeak-power">0</span> W</small></h3>
 			</div>
 
 			<div class="col-lg-4">
 			<h2>Today</h2>
-			<h1><span id="energytoday">0</span><small> kWh</small></h1>
+			<h1><span id="energy-today">0</span><small> kWh</small></h1>
 			<h3><small>8.46 kWh per day on average</small></h3>
 			</div>
 
@@ -56,18 +55,30 @@
 			<h3><small>2.00 kWh per day on average</small></h3>
 			</div>
 		</div>
-		<h2 id="graph">Power graph for <span id="day">today</span></h2>
-		<!-- For some strange reason the style must be set here for Raphael to work properly! CSS breaks it! -->
-		<div id="powergraph" style="width: 1000px; height: 800px"></div>
+		<h2 id="graph">
+			Power graph for <span id="graph-info">today</span>
+			<small>(<a onclick="editGraph()">edit</a>)</small>
+		</h2>
+		<!-- For some reason the width must be set here for Raphael to work properly; css breaks everything -->
+		<div id="power-graph" style="width: 1000px;"></div>
+
+		<br><br>
+		<h2 id="download">Download raw data</h2>
+		Data: <select id="data-select"></select><br>
+		From: <input id="start-date" value="2013-08-15"><br> 
+		To: <input id="end-date" value="2013-08-17"><br>
+		<button id="dl-button" onclick="downloadCSV()">Download</button>
+
 	</div><!-- /.container -->
 
 	<!-- JQuery and Bootstrap -->
 	<script type="text/javascript" src="http://code.jquery.com/jquery.js"></script>
+	<script type="text/javascript" src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
 	<script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
-	
-	<!-- ThingSpeak data processing scripts -->
+
+	<!-- Data processing & page management -->
 	<script src="feed_details.js"></script>
+	<script src="layout.js"></script>
 	<script src="calc.js"></script>
-	<script src="misc.js"></script>
   </body>
 </html>

@@ -1,29 +1,53 @@
-// ThingSpeak url: Define your channel and API read key in a separate file
+// ThingSpeak url: Define your channel and API read key in a separate file.
 var thingspeakURL = "http://api.thingspeak.com/channels/" + channel + "/";
 
 // A map to define the Thingspeak field number for each data stream.
-var fields = {totalpower: 1, peak: 2, offpeak: 3, temp:4};
+var fields = {
+	total: {number: 1, name: "Total power", sname: "total"},
+	peak: {number: 2, name: "Peak power", sname: "peak"},
+	offpeak: {number: 3, name: "Off-peak power", sname: "offpeak"},
+	temp: {number: 4, name: "Temperature", sname: "temp"},
+};
+
+// Store historical data so it doesn't have to be re-downloaded & re-processed.
+
+// powerHist[field short name][yy-mm-dd] = [[date, value], ...]
+var powerHist = {};
+// energyHist[field short name][yy-mm-dd] = value
+var energyHist = {};
+// graphHist[field short name][yy-mm-dd] = [[date, log(value), {tooltip: ...}], ...]
+var graphHist = {};
 
 $(document).ready(function($) {
-	getLivePower();
-	setInterval('getLivePower()', 30000);
-	calcDailyEnergy();
+	layoutInit();
+	historyInit();
+	livePower();
+	setInterval('livePower()', 30000);
+	calcDailyEnergy(fields.total);
 	calcHotWater();
 });
 
 // Fetch the latest power data and update the page accordingly.
-function getLivePower() {
+function livePower() {
 	var url = thingspeakURL + "feeds/last.json?callback=?&offset=10&key=" + readKey;
 	$.getJSON(url, function(data) {
 		if (data.field1) {
-			$("#totalpower").html(data.field1);
-			$("#peakpower").html(data.field2);
-			$("#offpeakpower").html(data.field3);	
+			$("#total-power").html(data.field1);
+			$("#peak-power").html(data.field2);
+			$("#offpeak-power").html(data.field3);
 		}
 	});
 }
 
-// Calculate the off-peak hotwater energy usage
+function historyInit() {
+	for (var f in fields) {
+		powerHist[fields[f].sname] = {};
+		energyHist[fields[f].sname] = {};
+		graphHist[fields[f].sname] = {};
+	}
+}
+
+// Calculate the off-peak hotwater energy usage.
 function calcHotWater() {
 	var download = getData(offPeakTime(), fields.offpeak);
 	$.when(download.handler).done(function(junk) {
@@ -34,17 +58,22 @@ function calcHotWater() {
 }
 
 // Calculate the energy used so far today.
-function calcDailyEnergy() {
-	var download = getData(daysAgo(0), fields.totalpower);
+function calcDailyEnergy(field) {
+	var download = getData(daysAgo(0), field);
 	$.when(download.handler).done(function(junk) {
 		var energy = calcEnergy(download.data);
 		energy = Math.round(energy*100)/100;
-		$("#energytoday").html(energy);
+		$("#energy-today").html(energy);
 
-		// Graph power usage
-		chartData = timeAverage(download.data, 600);
-		// console.log(chartData);
-		graphData('powergraph', chartData);
+		// Graph power usage.
+		var chartData = timeAverage(download.data, 600);
+		chartData = graphData('power-graph', field, chartData);
+
+		// Store all data.
+		var stamp = download.stamp;
+		powerHist[field.sname][stamp] = download.data;
+		energyHist[field.sname][stamp] = energy;
+		graphHist[field.sname][stamp] = chartData;
 	});
 }
 
@@ -60,7 +89,7 @@ function hoursAgo(x) {
 function daysAgo(x) {
 	var end = new Date();
 	if (x != 0) {
-		// Rollback the desired number of days
+		// Rollback the desired number of days.
 		end.setDate(end.getDate() - x);
 		end.setHours(23);
 		end.setMinutes(59);
@@ -71,7 +100,7 @@ function daysAgo(x) {
 	return {start: start, end: end};
 }
 
-// Create a time interval for last night's off peak period (10pm-7am)
+// Create a time interval for last night's off peak period (10pm-7am).
 function offPeakTime() {
 	var start = new Date();
 	var end = new Date();
@@ -89,8 +118,8 @@ function offPeakTime() {
 }
 
 // Fetch a single field's data for a given start and end time.
-function getData(time, fieldNumber) {
-	var url = thingspeakURL + "field/" + fieldNumber + ".json";
+function getData(time, field) {
+	var url = thingspeakURL + "field/" + field.number + ".json";
 	url += "?callback=?&offset=10&key=" + readKey;
 
 	url += "&start=" + thingspeakDate(time.start) + "&end=" + thingspeakDate(time.end);
@@ -106,7 +135,8 @@ function getData(time, fieldNumber) {
 		}
 	});
 
-	return {handler: handler, data: data};
+	var stamp = dateStamp(time.start);
+	return {handler: handler, data: data, stamp: stamp};
 }
 
 // Condense a large data set into a smaller, time averaged data set.
@@ -144,7 +174,7 @@ function timeAverage(data, interval) {
 	return newData;
 }
 
-// Calculate the energy used in a given period by integrating power over time.
+// Calculate the energy used in a given period by integrating power over time
 function calcEnergy(data) {
 	var l = data.length;
 	var energy = 0.0; // Wh
@@ -153,7 +183,7 @@ function calcEnergy(data) {
 	var power = 0.0; // watts
 
 	for (var i = 0; i < l - 1; i++) {
-		// Get time difference between this point and the previous one
+		// Calculate the duration of each power level
 		duration = data[i + 1][0].getTime();
 		duration -= data[i][0].getTime();
 
@@ -165,20 +195,18 @@ function calcEnergy(data) {
 	return energy/1000; // kWh
 }
 
-// Create a graph from an array of data pairs.
-// graphID: The id of the graph element (a div).
-function graphData(graphID, data) {
+// Create a graph from an array of data pairs
+// graphID: The id of the graph element (a div)
+function graphData(graphID, field, data) {
 
-	if (data.length == 0)
-	{
+	if (data.length == 0) {
 		$("#" + graphID).html("<p>No data.</p>");
 		return;
-	}	
+	}
 
 	$("#" + graphID).css("height", "800px");
 	var options = {
 			show_y_labels: false,
-			y_axis_scale: [0, ],
 			label_max: false,
 			label_min: false,
 			label_format: "%I:%M %p",
@@ -192,10 +220,36 @@ function graphData(graphID, data) {
 		date = date.toLocaleTimeString();
 		tooltip += date.substr(0, date.lastIndexOf(":"));
 		data[i].push({tooltip: tooltip});
+		
+		// Logarithms!
+		data[i][1] = Math.log(data[i][1]);
 	}
 
 	chart.add_line({data: data});
 	chart.draw();
+	updateGraphInfo(field, data[0][0]);
+
+	return data;
+}
+
+// Send the user to a new tab to download the CSV data they've requested.
+function downloadCSV() {
+	var fieldNo = document.getElementById("data-select").value;
+	fieldNo = parseInt(fieldNo);
+	var url = thingspeakURL + "field/" + fieldNo + ".csv";
+	url += "?offset=10&key=" + readKey;
+
+	var start = document.getElementById("start-date").value;
+	start = new Date(start);
+	var end = document.getElementById("end-date").value;
+	end = new Date(end);
+
+	start = thingspeakDate(start);
+	end = thingspeakDate(end);
+
+	url += "&start=" + start;
+	url += "&end=" + end;
+	window.open(url, "_blank");
 }
 
 // Convert a date object to YYYY-MM-DD%20HH-mm-SS
@@ -206,3 +260,7 @@ function thingspeakDate(date) {
 	return string;
 }
 
+// Date stamps for arrays
+function dateStamp(date) {
+	return $.datepicker.formatDate("dd:mm:yy", date, {});
+}
