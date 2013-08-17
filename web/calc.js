@@ -3,28 +3,37 @@ var thingspeakURL = "http://api.thingspeak.com/channels/" + channel + "/";
 
 // A map to define the Thingspeak field number for each data stream.
 var fields = {
-	total: {number: 1, name: "Total power", sname: "total"},
-	peak: {number: 2, name: "Peak power", sname: "peak"},
-	offpeak: {number: 3, name: "Off-peak power", sname: "offpeak"},
-	temp: {number: 4, name: "Temperature", sname: "temp"},
+	total: {number: 1, name: "Peak & off-peak power", id: "total"},
+	peak: {number: 2, name: "Peak power", id: "peak"},
+	offpeak: {number: 3, name: "Off-peak power", id: "offpeak"},
+	temp: {number: 4, name: "Temperature", id: "temp"},
 };
 
-// Store historical data so it doesn't have to be re-downloaded & re-processed.
-
-// powerHist[field short name][yy-mm-dd] = [[date, value], ...]
+/* Store historical data so it doesn't have to be re-downloaded & re-processed.
+ *	powerHist[field.id][dd:mm:yy] = [[date, value], ...]
+ *	energyHist[field.id][dd:mm:yy] = value
+ *	graphHist[field.id][dd:mm:yy] = [[date, log(value), {tooltip: ...}], ...]
+ */
 var powerHist = {};
-// energyHist[field short name][yy-mm-dd] = value
 var energyHist = {};
-// graphHist[field short name][yy-mm-dd] = [[date, log(value), {tooltip: ...}], ...]
 var graphHist = {};
 
+// Graph preferences.
+var gPrefs = { /* start, end, field */ };
+
+// Energy preferences.
+var ePrefs = { /* start, end, field */ };
+
 $(document).ready(function($) {
-	layoutInit();
+	layoutInit(); // From layout.js
 	historyInit();
+	prefsInit();	
+
 	livePower();
 	setInterval('livePower()', 30000);
-	calcDailyEnergy(fields.total);
-	calcHotWater();
+
+	// Call the graph updater with the energy updater as a dependant.
+	updateGraph(updateEnergy);
 });
 
 // Fetch the latest power data and update the page accordingly.
@@ -39,13 +48,81 @@ function livePower() {
 	});
 }
 
+// Setup the history super objects.
 function historyInit() {
 	for (var f in fields) {
-		powerHist[fields[f].sname] = {};
-		energyHist[fields[f].sname] = {};
-		graphHist[fields[f].sname] = {};
+		powerHist[fields[f].id] = {};
+		energyHist[fields[f].id] = {};
+		graphHist[fields[f].id] = {};
 	}
 }
+
+// Setup graph & energy defaults.
+function prefsInit() {
+	var time = daysAgo(0);
+	gPrefs.start = time.start;
+	gPrefs.end = time.end;
+	gPrefs.field = fields.total;
+
+	ePrefs.start = time.start;
+	ePrefs.end = time.end;
+	ePrefs.field = fields.total;	
+}
+
+// Update the energy integral to meet the user's desires.
+function updateEnergy() {
+	var stamp = dateStamp(ePrefs.start);
+	var fieldID = ePrefs.field.id;
+
+	if (typeof(energyHist[fieldID][stamp]) !== 'undefined') {
+		$("#energy").html(energyHist[fieldID][stamp]);
+	} else if (typeof(powerHist[fieldID][stamp]) !== 'undefined') {
+		var energy = calcEnergy(powerHist[fieldID][stamp]);
+		energy = Math.round(energy*100)/100;
+		$("#energy").html(energy);
+	} else {
+		var download = getData({start: ePrefs.start, end: ePrefs.end}, ePrefs.field);
+		$.when(download.handler).done(function(junk) {
+			// Cache data straight away.
+			powerHist[fieldID][stamp] = download.data;
+			
+			var energy = calcEnergy(download.data);
+			energy = Math.round(energy*100)/100;
+			$("#energy").html(energy);
+			energyHist[fieldID][stamp] = energy;
+		});
+	}
+
+	updateEnergyInfo(); // layout.js
+}
+
+// Update the graph to display the desired information.
+function updateGraph(dependantFunc) {
+	var stamp = dateStamp(gPrefs.start);
+	var fieldID = gPrefs.field.id;
+	
+	// Download data only if the cache is empty.
+	if (typeof(graphHist[fieldID][stamp]) !== 'undefined') {
+		graphData("power-graph", graphHist[fieldID][stamp]);
+	} else {
+		var download = getData({start: gPrefs.start, end: gPrefs.end}, gPrefs.field);
+		$.when(download.handler).done(function(junk) {
+			// Store the data and run the dependant function.
+			powerHist[fieldID][stamp] = download.data;
+
+			if (typeof(dependantFunc) === "function") {
+				dependantFunc();
+			}
+
+			var chartData = timeAverage(download.data, 600);
+			chartData = graphData('power-graph', chartData);
+			graphHist[fieldID][stamp] = chartData;
+		});
+	}
+
+	updateGraphInfo(); // layout.js
+}
+
 
 // Calculate the off-peak hotwater energy usage.
 function calcHotWater() {
@@ -57,26 +134,6 @@ function calcHotWater() {
 	});
 }
 
-// Calculate the energy used so far today.
-function calcDailyEnergy(field) {
-	var download = getData(daysAgo(0), field);
-	$.when(download.handler).done(function(junk) {
-		var energy = calcEnergy(download.data);
-		energy = Math.round(energy*100)/100;
-		$("#energy-today").html(energy);
-
-		// Graph power usage.
-		var chartData = timeAverage(download.data, 600);
-		chartData = graphData('power-graph', field, chartData);
-
-		// Store all data.
-		var stamp = download.stamp;
-		powerHist[field.sname][stamp] = download.data;
-		energyHist[field.sname][stamp] = energy;
-		graphHist[field.sname][stamp] = chartData;
-	});
-}
-
 // Describe the interval of time from 'x' hours ago to now.
 function hoursAgo(x) {
 	var end = new Date();
@@ -85,17 +142,27 @@ function hoursAgo(x) {
 	return {start: start, end: end};
 }
 
-// Create a time interval for a past day. 0 = today.
-function daysAgo(x) {
-	var end = new Date();
-	if (x != 0) {
-		// Rollback the desired number of days.
-		end.setDate(end.getDate() - x);
+// Create a time interval for a past set of days. x = 0 for today.
+function daysAgo(x, duration) {
+	if (typeof(duration) === 'undefined') {
+		duration = 1;
+	}
+
+	var now = new Date();
+
+	// Rollback the desired number of days.
+	var start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - x, 0, 0, 0, 0);
+
+	var end;
+	if (x == 0) {
+		end = now; // spooky.
+	} else {
+		end = new Date(start.getTime());
+		end.setDate(end.getDate() + (duration - 1));
 		end.setHours(23);
 		end.setMinutes(59);
 		end.setSeconds(59);
 	}
-	var start = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
 
 	return {start: start, end: end};
 }
@@ -125,18 +192,18 @@ function getData(time, field) {
 	url += "&start=" + thingspeakDate(time.start) + "&end=" + thingspeakDate(time.end);
 
 	var data = [];
+	var fieldID = "field" + field.number;
 	var handler = $.getJSON(url, function(rawData) {
 		var l = rawData.feeds.length;
 		for (var i = 0; i < l; i++) {
 			var dateString = rawData.feeds[i].created_at;
 			var date = new Date(dateString);
-			var power = parseInt(rawData.feeds[i].field1);
+			var power = parseInt(rawData.feeds[i][fieldID]);
 			data.push([date, power]);
 		}
 	});
 
-	var stamp = dateStamp(time.start);
-	return {handler: handler, data: data, stamp: stamp};
+	return {handler: handler, data: data};
 }
 
 // Condense a large data set into a smaller, time averaged data set.
@@ -195,13 +262,31 @@ function calcEnergy(data) {
 	return energy/1000; // kWh
 }
 
-// Create a graph from an array of data pairs
+// Create a graph from an array of data pairs.
 // graphID: The id of the graph element (a div)
-function graphData(graphID, field, data) {
+function graphData(graphID, data) {
+	// Clear out the old graph
+	$("#power-graph").html("");
 
+	// Check for empty data sets	
 	if (data.length == 0) {
 		$("#" + graphID).html("<p>No data.</p>");
 		return;
+	}
+
+
+	// If the data hasn't been graphed before take logarithms & add tooltips.	
+	if (typeof(data[0][2]) === 'undefined') {
+		for (var i = 0; i < data.length; i++) {
+			var tooltip = data[i][1] + "W at ";
+			var date = data[i][0];
+			date = date.toTimeString();
+			tooltip += date.substr(0, date.lastIndexOf(":"));
+			data[i].push({tooltip: tooltip});
+		
+			// Logarithms!
+			data[i][1] = Math.log(data[i][1]);
+		}
 	}
 
 	$("#" + graphID).css("height", "800px");
@@ -212,30 +297,16 @@ function graphData(graphID, field, data) {
 			label_format: "%I:%M %p",
 	};
 	var chart = new Charts.LineChart(graphID, options);
-
-	// Better tooltips
-	for (var i = 0; i < data.length; i++) {
-		var tooltip = data[i][1] + "W at ";
-		var date = data[i][0];
-		date = date.toLocaleTimeString();
-		tooltip += date.substr(0, date.lastIndexOf(":"));
-		data[i].push({tooltip: tooltip});
-		
-		// Logarithms!
-		data[i][1] = Math.log(data[i][1]);
-	}
-
 	chart.add_line({data: data});
 	chart.draw();
-	updateGraphInfo(field, data[0][0]);
 
 	return data;
 }
 
 // Send the user to a new tab to download the CSV data they've requested.
 function downloadCSV() {
-	var fieldNo = document.getElementById("data-select").value;
-	fieldNo = parseInt(fieldNo);
+	var fieldID = $("#data-select").val();
+	fieldNo = fields[fieldID].number;
 	var url = thingspeakURL + "field/" + fieldNo + ".csv";
 	url += "?offset=10&key=" + readKey;
 

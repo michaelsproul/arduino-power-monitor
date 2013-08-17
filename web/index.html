@@ -45,7 +45,7 @@
 
 			<div class="col-lg-4">
 			<h2>Today</h2>
-			<h1><span id="energy-today">0</span><small> kWh</small></h1>
+			<h1><span id="energy">0</span><small> kWh</small></h1>
 			<h3><small>8.46 kWh per day on average</small></h3>
 			</div>
 
@@ -57,16 +57,44 @@
 		</div>
 		<h2 id="graph">
 			Power graph for <span id="graph-info">today</span>
-			<small>(<a onclick="editGraph()">edit</a>)</small>
+			<small>(<a data-toggle="modal" href="#graph-options">edit</a>)</small>
 		</h2>
+		<!-- Graph Options -->
+		<div id="graph-options" class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+						<h4 class="modal-title">Edit Graph</h4>
+      				</div>
+      				<div class="modal-body">
+						<h4>Current settings</h4>
+						<p>
+						<b>Data source: </b><span id="graph-curr-field"></span><br>
+						<b>Start: </b><span id="graph-curr-start"></span><br>
+						<b>End: </b><span id="graph-curr-end"></span><br>
+						</p>
+						<h4>New settings</h4>
+						<b>Data source: </b><select id="graph-new-field"></select><br>
+						<b>Start: </b><select id="graph-new-start"></select><br>
+						<b>End: </b><select id="graph-new-end"></select><br>
+						</p> 
+      				</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						<button type="button" class="btn btn-primary" onclick="parseGraphPrefs()">Save changes</button>
+					</div>
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
 		<!-- For some reason the width must be set here for Raphael to work properly; css breaks everything -->
 		<div id="power-graph" style="width: 1000px;"></div>
 
 		<br><br>
 		<h2 id="download">Download raw data</h2>
-		Data: <select id="data-select"></select><br>
-		From: <input id="start-date" value="2013-08-15"><br> 
-		To: <input id="end-date" value="2013-08-17"><br>
+		Data: <select id="dl-data"></select><br>
+		From: <select id="dl-start"></select><br>
+		To: <select id="dl-end"></select><br>
 		<button id="dl-button" onclick="downloadCSV()">Download</button>
 
 	</div><!-- /.container -->
