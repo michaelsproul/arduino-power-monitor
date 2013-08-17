@@ -19,7 +19,8 @@ function navUpdateEnable() {
 function fillFieldSelectors() {
 	var selectors = [
 		"#dl-field",
-		"#graph-new-field",
+		"#graph-field",
+		"#energy-field",
 	];
 
 	var options = "";
@@ -36,11 +37,16 @@ function fillFieldSelectors() {
 
 // Fill out date selector options.
 function fillDateSelectors() {
-	var selectors = [
+	var starts = [
 		"#dl-start",
+		"#graph-start",
+		"#energy-start",
+	];	
+
+	var ends = [
 		"#dl-end",
-		"#graph-new-start",
-		"#graph-new-end",
+		"#graph-end",
+		"#energy-end",
 	];
 
 	var options = "";
@@ -53,18 +59,36 @@ function fillDateSelectors() {
 		options += "</option>";
 	}
 
-	for (var i in selectors) {
-		$(selectors[i]).html(options);
+	for (var i in starts) {
+		$(starts[i]).html(options);
+		// Select today as the default value
+		$(starts[i]).children('option[value|="0"]').attr("selected", "selected");
+	}
+	for (var i in ends) {
+		$(ends[i]).html(options);
 	}
 }
 
 // Interpret the user's input to the graph preferences box.
 function parseGraphPrefs() {
-	var fieldID = $("#graph-new-field").val();
-	gPrefs.field = fields[fieldID];
+	parsePrefs("graph", gPrefs, updateGraph);
+}
 
-	var start = parseInt($("#graph-new-start").val());
-	var duration = start - parseInt($("#graph-new-end").val());
+// Interpret the user's input to the energy preferences box.
+function parseEnergyPrefs() {
+	parsePrefs("energy", ePrefs, updateEnergy);
+}
+
+/*
+ * Generic function to parse a field, a start date, and an end date.
+ * Relies on the elements having IDs like name-field, name-start, name-options
+ */
+function parsePrefs(name, prefs, updateFunc) {
+	var fieldID = $("#" + name + "-field").val();
+	prefs.field = fields[fieldID];
+
+	var start = parseInt($("#" + name + "-start").val());
+	var duration = start - parseInt($("#" + name + "-end").val());
 
 	if (duration <= 0) {
 		alert("Please choose an end date after the start date.");
@@ -72,11 +96,11 @@ function parseGraphPrefs() {
 	}
 
 	var time = daysAgo(start, duration);
-	gPrefs.start = time.start;
-	gPrefs.end = time.end;
+	prefs.start = time.start;
+	prefs.end = time.end;
 
-	$("#graph-options").modal('hide');
-	updateGraph();
+	$("#" + name + "-options").modal('hide');
+	updateFunc();
 }
 
 // Create a popover with the chart info.
@@ -100,7 +124,7 @@ function updateGraphInfo() {
 	$("#graph-curr-end").html(niceDateTime(gPrefs.end));
 
 	// Title
-	title = niceDay(gPrefs.start);
+	title = niceDay(gPrefs.start, "today");
 	$("#graph-info").html(title);
 }
 
@@ -110,17 +134,17 @@ function updateEnergyInfo() {
 	title = title.substr(0, title.indexOf('power')).trim();
 	title += " usage, since 12am";
 
-	if (!isToday(ePrefs.start)) {
-		title += " (" + niceDate(ePrefs.start);
-		title += ")";
-	}
-
 	var options = {
 		placement: "bottom",
 		title: title,
 	}
 
+	$("#energy").tooltip('destroy');
 	$("#energy").tooltip(options);
+
+	// Title
+	title = niceDay(ePrefs.start, "Today");
+	$("#energy-info").html(title);
 }
 
 // Make dates like August 16 2013, 22:09
@@ -133,10 +157,10 @@ function niceDateTime(date) {
 }
 
 // Make dates like August 16, today, yesterday.
-function niceDay(date) {
+function niceDay(date, today) {
 	var nice;
-	if (isToday(date)) {
-		nice = "Today";
+	if (isToday(date) && typeof(today) !== 'undefined') {
+		nice = today;
 	} else {
 		nice = $.datepicker.formatDate("MM d", date);
 	}

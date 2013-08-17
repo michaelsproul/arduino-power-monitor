@@ -173,10 +173,10 @@ function offPeakTime() {
 	var start = new Date();
 	var end = new Date();
 
-	end.setDate(end.getDate() - 1);
-	end.setHours(22);
-	end.setMinutes(0);
-	end.setSeconds(0);
+	start.setDate(start.getDate() - 1);
+	start.setHours(22);
+	start.setMinutes(0);
+	start.setSeconds(0);
 
 	end.setHours(7);
 	end.setMinutes(0);

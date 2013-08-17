@@ -44,7 +44,10 @@
 			</div>
 
 			<div class="col-lg-4">
-			<h2>Today</h2>
+			<h2>
+			<span id="energy-info">Today</span>
+			<small>(<a data-toggle="modal" href="#energy-options">edit</a>)</small>
+			</h2>
 			<h1><span id="energy">0</span><small> kWh</small></h1>
 			<h3><small>8.46 kWh per day on average</small></h3>
 			</div>
@@ -52,9 +55,32 @@
 			<div class="col-lg-4">
 			<h2>Hot water</h2>
 			<h1><span id="hotwater">0</span><small> kWh</small></h1>
-			<h3><small>2.00 kWh per day on average</small></h3>
+			<h3><small hidden="true">2.00 kWh per day on average</small></h3>
 			</div>
 		</div>
+		<!-- Energy options -->
+		<div id="energy-options" class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+						<h4 class="modal-title">Edit Energy</h4>
+      				</div>
+      				<div class="modal-body">
+						<p>
+						<b>Data source: </b><select id="energy-field"></select><br>
+						<b>Start: </b><select id="energy-start"></select><br>
+						<b>End: </b><select id="energy-end"></select><br>
+						</p>
+      				</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						<button type="button" class="btn btn-primary" onclick="parseEnergyPrefs()">Save changes</button>
+					</div>
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+
 		<!-- Graph -->
 		<h2 id="graph">
 			Power graph for <span id="graph-info">today</span>
@@ -75,10 +101,10 @@
 						<b>End: </b><span id="graph-curr-end"></span><br>
 						</p>
 						<h4>New settings</h4>
-						<b>Data source: </b><select id="graph-new-field"></select><br>
-						<b>Start: </b><select id="graph-new-start"></select><br>
-						<b>End: </b><select id="graph-new-end"></select><br>
-						</p> 
+						<b>Data source: </b><select id="graph-field"></select><br>
+						<b>Start: </b><select id="graph-start"></select><br>
+						<b>End: </b><select id="graph-end"></select><br>
+						</p>
       				</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
