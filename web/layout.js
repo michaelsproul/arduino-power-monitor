@@ -17,14 +17,20 @@ function navUpdateEnable() {
 
 // Fill out field selector options.
 function fillFieldSelectors() {
-	var select1 = $("#dl-data");
-	var select2 = $("#graph-new-field");	
+	var selectors = [
+		"#dl-field",
+		"#graph-new-field",
+	];
+
+	var options = "";
 
 	for (var f in fields) {
-		var option = "<option value=" + fields[f].id + ">";
-		option += fields[f].name + "</option>";
-		select1.html(select1.html() + option);
-		select2.html(select2.html() + option);
+		options += "<option value=" + fields[f].id + ">";
+		options += fields[f].name + "</option>";
+	}
+
+	for (var i in selectors) {
+		$(selectors[i]).html(options);
 	}
 }
 
@@ -43,7 +49,7 @@ function fillDateSelectors() {
 		options += "<option value=" + i + ">";
 		var date = new Date();
 		date.setDate(date.getDate() - i);
-		options += $.datepicker.formatDate("MM d", date);
+		options += niceDay(date);
 		options += "</option>";
 	}
 
@@ -77,7 +83,7 @@ function parseGraphPrefs() {
 function updateGraphInfo() {
 	// Tooltips
 	var title = gPrefs.field.name + " on ";
-	title += $.datepicker.formatDate("DD, MM d", gPrefs.start, {});
+	title += $.datepicker.formatDate("DD, MM d", gPrefs.start);
 
 	var options = {
 		placement: "top",
@@ -90,8 +96,12 @@ function updateGraphInfo() {
 
 	// Graph preferences pop-up
 	$("#graph-curr-field").html(gPrefs.field.name);
-	$("#graph-curr-start").html(niceDate(gPrefs.start));
-	$("#graph-curr-end").html(niceDate(gPrefs.end));
+	$("#graph-curr-start").html(niceDateTime(gPrefs.start));
+	$("#graph-curr-end").html(niceDateTime(gPrefs.end));
+
+	// Title
+	title = niceDay(gPrefs.start);
+	$("#graph-info").html(title);
 }
 
 function updateEnergyInfo() {
@@ -101,7 +111,7 @@ function updateEnergyInfo() {
 	title += " usage, since 12am";
 
 	if (!isToday(ePrefs.start)) {
-		title += " (" + $.datepicker.formatDate("d/m/y", ePrefs.start);
+		title += " (" + niceDate(ePrefs.start);
 		title += ")";
 	}
 
@@ -113,12 +123,29 @@ function updateEnergyInfo() {
 	$("#energy").tooltip(options);
 }
 
-function niceDate(date) {
+// Make dates like August 16 2013, 22:09
+function niceDateTime(date) {
 	var nice = $.datepicker.formatDate("MM d yy, ", date);
 	var time = date.toLocaleTimeString();
 	time = time.substr(0, time.lastIndexOf(":"));
 	nice += time; 
 	return nice;
+}
+
+// Make dates like August 16, today, yesterday.
+function niceDay(date) {
+	var nice;
+	if (isToday(date)) {
+		nice = "Today";
+	} else {
+		nice = $.datepicker.formatDate("MM d", date);
+	}
+	return nice;
+}
+
+// Make dates like 16/8/13
+function niceDate(date) {
+	return $.datepicker.formatDate("d/m/y", date);
 }
 
 function isToday(date) {
@@ -132,4 +159,3 @@ function isToday(date) {
 		return false;
 	}
 }
-

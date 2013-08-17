@@ -34,6 +34,7 @@ $(document).ready(function($) {
 
 	// Call the graph updater with the energy updater as a dependant.
 	updateGraph(updateEnergy);
+	calcHotWater();
 });
 
 // Fetch the latest power data and update the page accordingly.
@@ -115,7 +116,7 @@ function updateGraph(dependantFunc) {
 			}
 
 			var chartData = timeAverage(download.data, 600);
-			chartData = graphData('power-graph', chartData);
+			chartData = graphData("power-graph", chartData);
 			graphHist[fieldID][stamp] = chartData;
 		});
 	}
@@ -263,17 +264,15 @@ function calcEnergy(data) {
 }
 
 // Create a graph from an array of data pairs.
-// graphID: The id of the graph element (a div)
 function graphData(graphID, data) {
 	// Clear out the old graph
-	$("#power-graph").html("");
+	$("#" + graphID).html("");
 
 	// Check for empty data sets	
 	if (data.length == 0) {
 		$("#" + graphID).html("<p>No data.</p>");
 		return;
 	}
-
 
 	// If the data hasn't been graphed before take logarithms & add tooltips.	
 	if (typeof(data[0][2]) === 'undefined') {
@@ -305,18 +304,17 @@ function graphData(graphID, data) {
 
 // Send the user to a new tab to download the CSV data they've requested.
 function downloadCSV() {
-	var fieldID = $("#data-select").val();
+	var fieldID = $("#dl-field").val();
 	fieldNo = fields[fieldID].number;
 	var url = thingspeakURL + "field/" + fieldNo + ".csv";
 	url += "?offset=10&key=" + readKey;
 
-	var start = document.getElementById("start-date").value;
-	start = new Date(start);
-	var end = document.getElementById("end-date").value;
-	end = new Date(end);
+	var start = $("#dl-start").val();
+	var end = $("#dl-start").val();
+	var time = daysAgo(start, (start - end));
 
-	start = thingspeakDate(start);
-	end = thingspeakDate(end);
+	start = thingspeakDate(time.start)
+	end = thingspeakDate(time.end);
 
 	url += "&start=" + start;
 	url += "&end=" + end;

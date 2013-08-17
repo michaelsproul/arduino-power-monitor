@@ -55,11 +55,11 @@
 			<h3><small>2.00 kWh per day on average</small></h3>
 			</div>
 		</div>
+		<!-- Graph -->
 		<h2 id="graph">
 			Power graph for <span id="graph-info">today</span>
 			<small>(<a data-toggle="modal" href="#graph-options">edit</a>)</small>
 		</h2>
-		<!-- Graph Options -->
 		<div id="graph-options" class="modal fade">
 			<div class="modal-dialog">
 				<div class="modal-content">
@@ -90,9 +90,10 @@
 		<!-- For some reason the width must be set here for Raphael to work properly; css breaks everything -->
 		<div id="power-graph" style="width: 1000px;"></div>
 
+		<!-- Download -->
 		<br><br>
 		<h2 id="download">Download raw data</h2>
-		Data: <select id="dl-data"></select><br>
+		Data: <select id="dl-field"></select><br>
 		From: <select id="dl-start"></select><br>
 		To: <select id="dl-end"></select><br>
 		<button id="dl-button" onclick="downloadCSV()">Download</button>
