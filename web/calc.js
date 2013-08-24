@@ -72,7 +72,7 @@ function prefsInit() {
 
 // Update the energy integral to meet the user's desires.
 function updateEnergy() {
-	var stamp = dateStamp(ePrefs.start);
+	var stamp = dateStamp(ePrefs.start, ePrefs.end);
 	var fieldID = ePrefs.field.id;
 
 	if (typeof(energyHist[fieldID][stamp]) !== 'undefined') {
@@ -81,6 +81,7 @@ function updateEnergy() {
 		var energy = calcEnergy(powerHist[fieldID][stamp]);
 		energy = Math.round(energy*100)/100;
 		$("#energy").html(energy);
+		energyHist[fieldID][stamp] = energy;
 	} else {
 		var download = getData({start: ePrefs.start, end: ePrefs.end}, ePrefs.field);
 		$.when(download.handler).done(function(junk) {
@@ -99,12 +100,16 @@ function updateEnergy() {
 
 // Update the graph to display the desired information.
 function updateGraph(dependantFunc) {
-	var stamp = dateStamp(gPrefs.start);
+	var stamp = dateStamp(gPrefs.start, gPrefs.end);
 	var fieldID = gPrefs.field.id;
 	
 	// Download data only if the cache is empty.
 	if (typeof(graphHist[fieldID][stamp]) !== 'undefined') {
 		graphData("power-graph", graphHist[fieldID][stamp]);
+		
+		if (typeof(dependantFunc) === "function") {
+				dependantFunc();
+		}
 	} else {
 		var download = getData({start: gPrefs.start, end: gPrefs.end}, gPrefs.field);
 		$.when(download.handler).done(function(junk) {
@@ -329,7 +334,11 @@ function thingspeakDate(date) {
 	return string;
 }
 
-// Date stamps for arrays
-function dateStamp(date) {
-	return $.datepicker.formatDate("dd:mm:yy", date, {});
+// Date stamps for stored historical data.
+function dateStamp(start, end) {
+	var stamp = twoDigits(start.getHours()) + ":"
+	stamp += $.datepicker.formatDate("dd:mm:yy~", start);
+	stamp += twoDigits(end.getHours()) + ":";
+	stamp += $.datepicker.formatDate("dd:mm:yy", end);
+	return stamp;
 }

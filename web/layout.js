@@ -83,24 +83,39 @@ function parseEnergyPrefs() {
  * Generic function to parse a field, a start date, and an end date.
  * Relies on the elements having IDs like name-field, name-start, name-options
  */
-function parsePrefs(name, prefs, updateFunc) {
+function parsePrefs(name, prefs, updateFunc, oppFunc) {
 	var fieldID = $("#" + name + "-field").val();
-	prefs.field = fields[fieldID];
 
+	// Parse dates
+	// TODO: Make dates less shit
 	var start = parseInt($("#" + name + "-start").val());
 	var duration = start - parseInt($("#" + name + "-end").val());
-
 	if (duration <= 0) {
 		alert("Please choose an end date after the start date.");
 		return;
 	}
-
 	var time = daysAgo(start, duration);
-	prefs.start = time.start;
-	prefs.end = time.end;
 
+	// Hide the popup
 	$("#" + name + "-options").modal('hide');
-	updateFunc();
+
+	// Work out where to write data, and what to update
+	var updateBoth = $("#" + name + "-sync").is(":checked");
+	if (updateBoth) {
+		ePrefs.field = fields[fieldID];
+		ePrefs.start = time.start;
+		ePrefs.end = time.end;
+		gPrefs.field = fields[fieldID];
+		gPrefs.start = time.start;
+		gPrefs.end = time.end;
+
+		updateGraph(updateEnergy);
+	} else {
+		prefs.field = fields[fieldID];
+		prefs.start = time.start;
+		prefs.end = time.end;
+		updateFunc();
+	}
 }
 
 // Create a popover with the chart info.
@@ -118,10 +133,7 @@ function updateGraphInfo() {
 	$("#graph-info").tooltip('destroy');
 	$("#graph-info").tooltip(options);
 
-	// Graph preferences pop-up
-	$("#graph-curr-field").html(gPrefs.field.name);
-	$("#graph-curr-start").html(niceDateTime(gPrefs.start));
-	$("#graph-curr-end").html(niceDateTime(gPrefs.end));
+	// TODO: Update preferences boxes with current status.
 
 	// Title
 	title = niceDay(gPrefs.start, "today");
@@ -181,5 +193,14 @@ function isToday(date) {
 		return true;
 	} else {
 		return false;
+	}
+}
+
+// Two digit enforcer.
+function twoDigits(x) {
+	if (x < 10) {
+		return "0" + x.toString();
+	} else {
+		return x.toString();
 	}
 }

@@ -1,13 +1,10 @@
 Arduino Power Monitor
 =====================
 
-A simple program to monitor the serial output of a CurrentCost 128 power meter and send the data to 
-ThingSpeak using an Arduino.
+This project consists of two separate programs to ease the monitoring of household electricity usage.
 
-## About
-
-Updated by Michael Sproul for use with Thingspeak and the Python based CLI build tool, `ino`. Based on 
-[original code](https://github.com/bleep1/CurrentCostToCosmViaArduino) by Brian Lee (bleep1)
+1. A simple C program for Arduino, which parses XML data from a Current Cost power meter & uploads to Thingspeak.
+2. A website that uses the data from Thingspeak to create graphs & calculate energy usage.
 
 ## Parts List
 
@@ -16,12 +13,14 @@ http://www.smartnow.com.au/
 2. Arduino.  I used an Etherten from Freetronics. http://www.freetronics.com/products/etherten
 3. Home made serial cable, RJ45->Arduino. Blue = Ground, Brown = Monitor output/Arduino input
 4. Login account at http://www.thingspeak.com
-5. This GIT repo
+5. This Git repo
 7. Ino from http://inotool.org/
 
 ## Libraries
 
 Since changing from Xively to ThingSpeak, no extra libraries are required!
+
+The web page uses a bunch of great Javascript libraries, notably Raphael & Raphy Charts for the graphs.
 
 ## Building
 
@@ -38,5 +37,12 @@ serial-test directory and you'll see the XML output from the meter (hopefully).
 
 ## Reference material
 
-* Info on the data from the Cust Cost serial port: http://www.currentcost.com/download/Envi%20XML%20v19%20-%202011-01-11.pdf
-* Another guy who did something similar: http://mungbean.org/blog/?p=477
+* [Current Cost XML specification](http://www.currentcost.com/download/Envi%20XML%20v19%20-%202011-01-11.pdf)
+* [Another guy who did something similar](http://mungbean.org/blog/?p=477)
+* [Some wicked CC bridge hacking](http://john.crouchley.com/blog/archives/722)
+
+## Authors
+
+Website & Thingspeak upload capability by Michael Sproul.
+
+Based on [original code](https://github.com/bleep1/CurrentCostToCosmViaArduino) by Brian Lee (bleep1)
