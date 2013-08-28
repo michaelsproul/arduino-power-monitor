@@ -320,8 +320,8 @@ function downloadCSV() {
 	var end = $("#dl-end-date").val();
 	end = $.datepicker.parseDate("dd/mm/y", end);
 
-	start = thingspeakDate(time.start)
-	end = thingspeakDate(time.end);
+	start = thingspeakDate(start)
+	end = thingspeakDate(end);
 
 	url += "&start=" + start;
 	url += "&end=" + end;

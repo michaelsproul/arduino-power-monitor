@@ -1,3 +1,7 @@
-body { padding-top: 80px; }
-#start-date { width: 90px; }
-#end-date { width: 90px; }
+body {
+	padding-top: 80px;
+}
+
+.tooltip-inner {
+	white-space: pre-wrap;
+}

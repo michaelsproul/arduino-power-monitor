@@ -125,8 +125,8 @@ function parsePrefs(name, prefs, updateFunc, oppFunc) {
 // Create a popover with the chart info.
 function updateGraphInfo() {
 	// Tooltips
-	var title = gPrefs.field.name + " for ";
-	title += doubleDate(gPrefs.start, gPrefs.end, "today");
+	var title = gPrefs.field.name + "\n";
+	title += doubleDate(gPrefs.start, gPrefs.end, "Today", true);
 
 	var options = {
 		placement: "top",
@@ -138,14 +138,14 @@ function updateGraphInfo() {
 	$("#graph-info").tooltip(options);
 
 	// Title
-	title = doubleDate(gPrefs.start, gPrefs.end, "today");
+	title = doubleDate(gPrefs.start, gPrefs.end, "today", false);
 	$("#graph-info").html(title);
 }
 
 function updateEnergyInfo() {
 	// Tooltips
 	var title = ePrefs.field.name;
-	title += " usage " + doubleDate(ePrefs.start, ePrefs.end, "since 12am");
+	title += " usage\n" + doubleDate(ePrefs.start, ePrefs.end, "Today", true);
 
 	var options = {
 		placement: "bottom",
@@ -156,35 +156,37 @@ function updateEnergyInfo() {
 	$("#energy").tooltip(options);
 
 	// Title
-	title = doubleDate(ePrefs.start, ePrefs.end, "Today");
+	title = doubleDate(ePrefs.start, ePrefs.end, "Today", false);
 	$("#energy-info").html(title);
 }
 
 // Compact expression of a time interval.
-function doubleDate(start, end, today) {
-	var dateString;
-	if (isToday(start))
-	{
-		dateString = today;
-	}
-	else
-	{
-		if (start.getDate() == end.getDate() - 1)
-		{
-			dateString = niceDay(start);
+function doubleDate(start, end, today, time) {
+	var dateString = "";
+	// Return "today" or similar for single days.
+	if (isToday(start) || sameDay(start, end)) {
+		dateString = niceDay(start, today);
+		if (time) {
+			dateString += " " + timeInterval(start, end);
 		}
-		else
-		{
-			dateString = niceDay(start);
-			// Check month
-			if (start.getMonth() == end.getMonth())
-			{
-				dateString += "-" + end.getDate();
+	}
+	// Otherwise return an interval, optionally with times.
+	else {
+		if (time) {
+			dateString = niceTime(start.getHours()) + " ";
+		}
+		dateString += niceDay(start);
+
+		// Compound dates in the same month.
+		if (start.getMonth() == end.getMonth() && !time) {
+			dateString += "-" + end.getDate();
+		}
+		else {
+			dateString += " - ";
+			if (time) {
+				dateString += niceTime(end.getHours()) + " ";
 			}
-			else
-			{
-				dateString += " - " + niceDay(end);
-			}
+			dateString += niceDay(end);
 		}
 	}
 	return dateString;
@@ -220,4 +222,26 @@ function isToday(date) {
 	} else {
 		return false;
 	}
+}
+
+function timeInterval(start, end) {
+	if (start.getHours() == 0 && end.getHours() == 0) {
+		return "";
+	}
+	var time = " (" + niceTime(start.getHours());
+	time += "-" + niceTime(end.getHours()) + ")";
+	return time;
+}
+
+function sameDay(start, end) {
+	if (start.getMonth() != end.getMonth() || start.getFullYear() != end.getFullYear()) {
+		return false;
+	}
+	if (start.getDate() == end.getDate()) {
+		return true;
+	}
+	if (start.getDate() == end.getDate() - 1 && start.getHours() == end.getHours()) {
+		return true;
+	}
+	return false;
 }
