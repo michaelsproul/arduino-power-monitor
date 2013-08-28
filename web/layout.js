@@ -1,11 +1,11 @@
 function layoutInit() {
-	fillFieldSelectors();
-	fillDateSelectors();
-	navUpdateEnable();
+	fieldSelectSetup();
+	dateSetup();
+	navbarSetup();
 }
 
-// Navigation bar updating.
-function navUpdateEnable() {
+// Make the navigation bar update when clicked.
+function navbarSetup() {
 	$('.nav li').click(function(event) {
 		$('.nav li').each(function(index) {
 			$(this).removeClass('active');
@@ -16,7 +16,7 @@ function navUpdateEnable() {
 }
 
 // Fill out field selector options.
-function fillFieldSelectors() {
+function fieldSelectSetup() {
 	var selectors = [
 		"#dl-field",
 		"#graph-field",
@@ -35,38 +35,40 @@ function fillFieldSelectors() {
 	}
 }
 
-// Fill out date selector options.
-function fillDateSelectors() {
-	var starts = [
-		"#dl-start",
-		"#graph-start",
-		"#energy-start",
-	];	
-
-	var ends = [
-		"#dl-end",
-		"#graph-end",
-		"#energy-end",
+// Initialise date selectors
+function dateSetup() {
+	var names = [
+		"graph",
+		"energy",
 	];
 
-	var options = "";
+	var dateOnly = [
+		"dl",
+	];
 
-	for (var i = -1; i < 30; i++) {
-		options += "<option value=" + i + ">";
-		var date = new Date();
-		date.setDate(date.getDate() - i);
-		options += niceDay(date);
-		options += "</option>";
+	// Hours
+	var hours = "<option value=0>12am</option>"
+	for (var i = 1; i <= 23; i++) {
+		var hour;
+		hour = niceTime(i);
+		hours += "<option value=" + i + ">"
+		hours += hour + "</option>";
 	}
 
-	for (var i in starts) {
-		$(starts[i]).html(options);
-		// Select today as the default value
-		$(starts[i]).children('option[value|="0"]').attr("selected", "selected");
+	// Dates, using JQuery UI datepickers
+	var dpOptions = {dateFormat: "dd/mm/y"};
+
+	for (var i in names) {
+		$("#" + names[i] + "-start-hour").html(hours);
+		$("#" + names[i] + "-end-hour").html(hours);
+		$("#" + names[i] + "-start-date").datepicker(dpOptions);
+		$("#" + names[i] + "-end-date").datepicker(dpOptions);
 	}
-	for (var i in ends) {
-		$(ends[i]).html(options);
-	}
+
+	for (var i in dateOnly) {
+		$("#" + dateOnly[i] + "-start-date").datepicker(dpOptions);
+		$("#" + dateOnly[i] + "-end-date").datepicker(dpOptions);	
+	}	
 }
 
 // Interpret the user's input to the graph preferences box.
@@ -81,20 +83,22 @@ function parseEnergyPrefs() {
 
 /*
  * Generic function to parse a field, a start date, and an end date.
- * Relies on the elements having IDs like name-field, name-start, name-options
+ * Relies on the elements having IDs like name-field, name-start-date, name-options
  */
 function parsePrefs(name, prefs, updateFunc, oppFunc) {
+	// Read the field/datastream to use	
 	var fieldID = $("#" + name + "-field").val();
 
 	// Parse dates
-	// TODO: Make dates less shit
-	var start = parseInt($("#" + name + "-start").val());
-	var duration = start - parseInt($("#" + name + "-end").val());
-	if (duration <= 0) {
-		alert("Please choose an end date after the start date.");
-		return;
-	}
-	var time = daysAgo(start, duration);
+	var start = $("#" + name + "-start-date").val();
+	start = $.datepicker.parseDate("dd/mm/y", start);
+	var hour = $("#" + name + "-start-hour").val();
+	start.setHours(hour);
+
+	var end = $("#" + name + "-end-date").val();
+	end = $.datepicker.parseDate("dd/mm/y", end);
+	hour = $("#" + name + "-end-hour").val();
+	end.setHours(hour);
 
 	// Hide the popup
 	$("#" + name + "-options").modal('hide');
@@ -103,17 +107,17 @@ function parsePrefs(name, prefs, updateFunc, oppFunc) {
 	var updateBoth = $("#" + name + "-sync").is(":checked");
 	if (updateBoth) {
 		ePrefs.field = fields[fieldID];
-		ePrefs.start = time.start;
-		ePrefs.end = time.end;
+		ePrefs.start = start;
+		ePrefs.end = end;
 		gPrefs.field = fields[fieldID];
-		gPrefs.start = time.start;
-		gPrefs.end = time.end;
+		gPrefs.start = start;
+		gPrefs.end = end;
 
 		updateGraph(updateEnergy);
 	} else {
 		prefs.field = fields[fieldID];
-		prefs.start = time.start;
-		prefs.end = time.end;
+		prefs.start = start;
+		prefs.end = end;
 		updateFunc();
 	}
 }
@@ -121,8 +125,8 @@ function parsePrefs(name, prefs, updateFunc, oppFunc) {
 // Create a popover with the chart info.
 function updateGraphInfo() {
 	// Tooltips
-	var title = gPrefs.field.name + " on ";
-	title += $.datepicker.formatDate("DD, MM d", gPrefs.start);
+	var title = gPrefs.field.name + " for ";
+	title += doubleDate(gPrefs.start, gPrefs.end, "today");
 
 	var options = {
 		placement: "top",
@@ -133,18 +137,15 @@ function updateGraphInfo() {
 	$("#graph-info").tooltip('destroy');
 	$("#graph-info").tooltip(options);
 
-	// TODO: Update preferences boxes with current status.
-
 	// Title
-	title = niceDay(gPrefs.start, "today");
+	title = doubleDate(gPrefs.start, gPrefs.end, "today");
 	$("#graph-info").html(title);
 }
 
 function updateEnergyInfo() {
 	// Tooltips
 	var title = ePrefs.field.name;
-	title = title.substr(0, title.indexOf('power')).trim();
-	title += " usage, since 12am";
+	title += " usage " + doubleDate(ePrefs.start, ePrefs.end, "since 12am");
 
 	var options = {
 		placement: "bottom",
@@ -155,17 +156,38 @@ function updateEnergyInfo() {
 	$("#energy").tooltip(options);
 
 	// Title
-	title = niceDay(ePrefs.start, "Today");
+	title = doubleDate(ePrefs.start, ePrefs.end, "Today");
 	$("#energy-info").html(title);
 }
 
-// Make dates like August 16 2013, 22:09
-function niceDateTime(date) {
-	var nice = $.datepicker.formatDate("MM d yy, ", date);
-	var time = date.toLocaleTimeString();
-	time = time.substr(0, time.lastIndexOf(":"));
-	nice += time; 
-	return nice;
+// Compact expression of a time interval.
+function doubleDate(start, end, today) {
+	var dateString;
+	if (isToday(start))
+	{
+		dateString = today;
+	}
+	else
+	{
+		if (start.getDate() == end.getDate() - 1)
+		{
+			dateString = niceDay(start);
+		}
+		else
+		{
+			dateString = niceDay(start);
+			// Check month
+			if (start.getMonth() == end.getMonth())
+			{
+				dateString += "-" + end.getDate();
+			}
+			else
+			{
+				dateString += " - " + niceDay(end);
+			}
+		}
+	}
+	return dateString;
 }
 
 // Make dates like August 16, today, yesterday.
@@ -174,14 +196,18 @@ function niceDay(date, today) {
 	if (isToday(date) && typeof(today) !== 'undefined') {
 		nice = today;
 	} else {
-		nice = $.datepicker.formatDate("MM d", date);
+		nice = $.datepicker.formatDate("M d", date);
 	}
 	return nice;
 }
 
-// Make dates like 16/8/13
-function niceDate(date) {
-	return $.datepicker.formatDate("d/m/y", date);
+// Convert values to am/pm time
+function niceTime(x) {	
+	if (x <= 11) {
+		return (((x + 11) % 12) + 1) + "am";
+	} else {
+		return (((x - 1) % 12) + 1) + "pm";
+	}
 }
 
 function isToday(date) {
@@ -193,14 +219,5 @@ function isToday(date) {
 		return true;
 	} else {
 		return false;
-	}
-}
-
-// Two digit enforcer.
-function twoDigits(x) {
-	if (x < 10) {
-		return "0" + x.toString();
-	} else {
-		return x.toString();
 	}
 }

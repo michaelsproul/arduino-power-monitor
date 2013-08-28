@@ -69,8 +69,11 @@
       				<div class="modal-body">
 						<p>
 						<b>Data source: </b><select id="energy-field"></select><br>
-						<b>Start: </b><select id="energy-start"></select><br>
-						<b>End: </b><select id="energy-end"></select><br>
+						<b>Start: </b><select id="energy-start-hour"></select>
+						<input type="text" id="energy-start-date"></input>
+						<br>
+						<b>End: </b><select id="energy-end-hour"></select>
+						<input type="text" id="energy-end-date"></input>
 						<br>
 						<input type="checkbox" id="energy-sync"> Update the graph too.
 						</p>
@@ -97,8 +100,11 @@
       				</div>
       				<div class="modal-body">
 						<b>Data source: </b><select id="graph-field"></select><br>
-						<b>Start: </b><select id="graph-start"></select><br>
-						<b>End: </b><select id="graph-end"></select><br>
+						<b>Start: </b><select id="graph-start-hour"></select>
+						<input type="text" id="graph-start-date"></input>
+						<br>
+						<b>End: </b><select id="graph-end-hour"></select>
+						<input type="text" id="graph-end-date"></input>
 						<br>
 						<input type="checkbox" id="graph-sync"> Update the energy tally too.
 						</p>
@@ -117,8 +123,8 @@
 		<br><br>
 		<h2 id="download">Download raw data</h2>
 		Data: <select id="dl-field"></select><br>
-		From: <select id="dl-start"></select><br>
-		To: <select id="dl-end"></select><br>
+		From: <input type="text" id="dl-start-date"></input><br>
+		To: <input type="text" id="dl-end-date"></input><br>
 		<button id="dl-button" onclick="downloadCSV()">Download</button>
 
 	</div><!-- /.container -->

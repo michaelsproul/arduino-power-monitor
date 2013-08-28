@@ -29,6 +29,7 @@ $(document).ready(function($) {
 	historyInit();
 	prefsInit();	
 
+	// Live power every 30 seconds
 	livePower();
 	setInterval('livePower()', 30000);
 
@@ -314,9 +315,10 @@ function downloadCSV() {
 	var url = thingspeakURL + "field/" + fieldNo + ".csv";
 	url += "?offset=10&key=" + readKey;
 
-	var start = $("#dl-start").val();
-	var end = $("#dl-start").val();
-	var time = daysAgo(start, (start - end));
+	var start = $("#dl-start-date").val();
+	start = $.datepicker.parseDate("dd/mm/y", start);
+	var end = $("#dl-end-date").val();
+	end = $.datepicker.parseDate("dd/mm/y", end);
 
 	start = thingspeakDate(time.start)
 	end = thingspeakDate(time.end);
@@ -336,9 +338,17 @@ function thingspeakDate(date) {
 
 // Date stamps for stored historical data.
 function dateStamp(start, end) {
-	var stamp = twoDigits(start.getHours()) + ":"
+	var stamp = twoDigits(start.getHours()) + "t"
 	stamp += $.datepicker.formatDate("dd:mm:yy~", start);
-	stamp += twoDigits(end.getHours()) + ":";
+	stamp += twoDigits(end.getHours()) + "t";
 	stamp += $.datepicker.formatDate("dd:mm:yy", end);
 	return stamp;
+}
+
+function twoDigits(x) {
+	if (x < 10) {
+		return "0" + x.toString();
+	} else {
+		return x.toString();
+	}
 }
