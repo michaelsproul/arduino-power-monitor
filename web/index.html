@@ -70,10 +70,10 @@
 						<p>
 						<b>Data source: </b><select id="energy-field"></select><br>
 						<b>Start: </b><select id="energy-start-hour"></select>
-						<input type="text" id="energy-start-date"></input>
+						<input type="text" id="energy-start-date">
 						<br>
 						<b>End: </b><select id="energy-end-hour"></select>
-						<input type="text" id="energy-end-date"></input>
+						<input type="text" id="energy-end-date">
 						<br>
 						<input type="checkbox" id="energy-sync"> Update the graph too.
 						</p>
@@ -101,10 +101,10 @@
       				<div class="modal-body">
 						<b>Data source: </b><select id="graph-field"></select><br>
 						<b>Start: </b><select id="graph-start-hour"></select>
-						<input type="text" id="graph-start-date"></input>
+						<input type="text" id="graph-start-date">
 						<br>
 						<b>End: </b><select id="graph-end-hour"></select>
-						<input type="text" id="graph-end-date"></input>
+						<input type="text" id="graph-end-date">
 						<br>
 						<input type="checkbox" id="graph-sync"> Update the energy tally too.
 						</p>
@@ -123,10 +123,14 @@
 		<br><br>
 		<h2 id="download">Download raw data</h2>
 		Data: <select id="dl-field"></select><br>
-		From: <input type="text" id="dl-start-date"></input><br>
-		To: <input type="text" id="dl-end-date"></input><br>
+		From: <input type="text" id="dl-start-date"><br>
+		To: <input type="text" id="dl-end-date"><br>
 		<button id="dl-button" onclick="downloadCSV()">Download</button>
-
+		<br>
+		<h2 id="download">Download time averaged data</h2>
+		Download the data currently being displayed by the graph.<br>
+		Time interval (minutes): <input type="text" id="ta-interval" value="5"><br>
+		<button onclick="downloadTimeAveraged()">Download</button>
 	</div><!-- /.container -->
 
 	<!-- JQuery and Bootstrap -->

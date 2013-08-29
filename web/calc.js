@@ -328,6 +328,29 @@ function downloadCSV() {
 	window.open(url, "_blank");
 }
 
+// Download a time averaged data set.
+function downloadTimeAveraged() {
+	// Read interval & convert to seconds
+	var interval = $("#ta-interval").val();
+	interval = 60*parseInt(interval);
+
+	var stamp = dateStamp(gPrefs.start, gPrefs.end);
+	var data = powerHist[gPrefs.field.id][stamp];
+	data = timeAverage(data, interval);	
+
+	var csvData = "data:text/csv;charset=utf-8,";
+	data.forEach(function(dataPoint, index) {
+		var dataString = $.datepicker.formatDate("dd/mm/y ", dataPoint[0]);
+		dataString += dataPoint[0].toTimeString();
+		dataString = dataString.substr(0, dataString.lastIndexOf(":") + 3);
+		dataString += "," + dataPoint[1];
+   		csvData += dataString + "\n";
+	});
+
+	var encodedUri = encodeURI(csvData);
+	window.open(encodedUri);
+}
+
 // Convert a date object to YYYY-MM-DD%20HH-mm-SS
 function thingspeakDate(date) {
 	var string = date.toISOString();
