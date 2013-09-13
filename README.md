@@ -16,6 +16,14 @@ http://www.smartnow.com.au/
 5. This Git repo
 7. Ino from http://inotool.org/
 
+## Using a Current Cost Bridge
+
+I've now switched to using a hacked Current Cost network bridge as my Arduino. This required some changes to the board settings and serial configuration so I've moved the old Arduino code to a "vanilla" branch. If you've got a regular Arduino, use the vanilla branch.
+
+I'm currently uploading code using an AVR programmer (the USBTiny ISP) and avrdude. The neccessary settings are in the Makefile, so you can just run `ino build && make burn`.
+
+I roughly followed [these instructions](http://john.crouchley.com/blog/archives/722) to hack the bridge.
+
 ## Libraries
 
 Since changing from Xively to ThingSpeak, no extra libraries are required!

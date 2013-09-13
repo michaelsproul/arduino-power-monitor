@@ -53,7 +53,6 @@ void format_data()
 	int total = peakpower + offpeakpower;
 	snprintf(fdata, 50, "field1=%d&field2=%d&field3=%d&field4=%d",
 				total, peakpower, offpeakpower, temp);
-	Serial.println(fdata);
 }
 
 /* A function to upload the data to ThingSpeak */
@@ -78,20 +77,20 @@ void upload_data()
 
 		if (client.connected())
 		{
-			Serial.println("[upload succeeded]");
+			// Serial.println("[upload succeeded]");
 			failed_connections = 0;
 			client.stop();
 		}
 		else
 		{
-			Serial.println("[upload failed: connection dropped]");
+			// Serial.println("[upload failed: connection dropped]");
 			failed_connections++;
 			client.stop();
 		}
 	}
 	else
 	{
-		Serial.println("[upload failed: connection refused]");
+		// Serial.println("[upload failed: connection refused]");
 		failed_connections++;
 		client.stop();
 	}
@@ -147,7 +146,7 @@ void process_start_tag(char c)
 		}
 		else
 		{
-			Serial.println("Tag buffer overflow!");
+			// Serial.println("Tag buffer overflow!");
 		}
 	}
 }
@@ -194,13 +193,14 @@ void process_tag_body(char c)
 				offpeakpower = atoi(desired_data);
 
 				/* Print data to console */
+				/*
 				Serial.print("peak: ");
 				Serial.print(peakpower);
 				Serial.print(" offpeak: ");
 				Serial.print(offpeakpower);
 				Serial.print(" temp: ");
 				Serial.println(temp);
-
+				*/
 				/* Add data to cumulative totals */
 				c_temp += temp;
 				c_peak += peakpower;
