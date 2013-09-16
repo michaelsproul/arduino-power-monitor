@@ -77,50 +77,21 @@ void upload_data()
 
 		if (client.connected())
 		{
-			// Serial.println("[upload succeeded]");
 			failed_connections = 0;
 			client.stop();
 		}
 		else
 		{
-			// Serial.println("[upload failed: connection dropped]");
 			failed_connections++;
 			client.stop();
 		}
 	}
 	else
 	{
-		// Serial.println("[upload failed: connection refused]");
 		failed_connections++;
 		client.stop();
 	}
 }
-
-#ifdef _DEBUG
-void state_message()
-{
-	switch (state) {
-	case DEFAULT_STATE:
-		Serial.println("default state");
-		break;
-	case IN_START_TAG:
-		Serial.println("tag mode");
-		break;
-	case IN_END_TAG:
-		Serial.println("end tag mode");
-		break;
-	case IN_GENERIC_TAG:
-		Serial.println("generic tag mode");
-		break;
-	case IN_TAG_BODY:
-		Serial.println("tag body mode");
-		break;
-	default:
-		Serial.print("something is very wrong");
-		break;
-	}
-}
-#endif
 
 void change_state(int new_state)
 {
@@ -146,7 +117,7 @@ void process_start_tag(char c)
 		}
 		else
 		{
-			// Serial.println("Tag buffer overflow!");
+			// Tag buffer overflow!
 		}
 	}
 }
@@ -192,15 +163,6 @@ void process_tag_body(char c)
 			{
 				offpeakpower = atoi(desired_data);
 
-				/* Print data to console */
-				/*
-				Serial.print("peak: ");
-				Serial.print(peakpower);
-				Serial.print(" offpeak: ");
-				Serial.print(offpeakpower);
-				Serial.print(" temp: ");
-				Serial.println(temp);
-				*/
 				/* Add data to cumulative totals */
 				c_temp += temp;
 				c_peak += peakpower;

@@ -1,13 +1,21 @@
-#include <SoftwareSerial.h>
 #include <Ethernet.h>
+#include <SPI.h>
 
 #include "auth.h"
 
-/* The current cost bridge just reads from the regular Serial @ 57600bps */
+/* Initialise serial appropriately */
 #define CC_BAUD 57600
 
-/* The ethernet control pin, write HIGH to enable */
-#define ETH_PIN 7
+#ifdef _BRIDGE
+	#define CC_SERIAL Serial
+	#define ETH_PIN 7
+#else
+	#include <SoftwareSerial.h>
+	#define SERIAL_RX 2
+	#define SERIAL_TX 3
+	SoftwareSerial ccSerial(SERIAL_RX, SERIAL_TX);
+	#define CC_SERIAL ccSerial
+#endif
 
 /* Thingspeak details (API key is in auth.h) */
 #define THINGSPEAK_URL "api.thingspeak.com"
@@ -33,7 +41,7 @@ EthernetClient client;
 char buffer[BUFFER_SIZE];
 int i = 0;
 
-/* The time of the last read from the SoftwareSerial */
+/* The time of the last read from the serial */
 unsigned long t_lastread = 0;
 
 /* Are we waiting for a message? Did a buffer overflow? */
@@ -47,11 +55,14 @@ boolean overflowed = false;
 void setup()
 {
 	/* Initialise Arduino to CurrentCost meter serial */
-	Serial.begin(CC_BAUD);
+	CC_SERIAL.begin(CC_BAUD);
 
-	/* Enable the ethernet chip and connect to the network */
+	#ifdef _BRIDGE
 	pinMode(ETH_PIN, OUTPUT);
 	digitalWrite(ETH_PIN, HIGH);
+	#endif
+
+	/* Connect to the network */
 	Ethernet.begin(mac, ip, gateway, gateway);
 }
 
@@ -67,9 +78,9 @@ void loop()
 	 */
 	while ((millis() - t_lastread < MSG_DELAY || waiting) && !overflowed)
 	{
-		if (Serial.available())
+		if (CC_SERIAL.available())
 		{
-			while (Serial.available())
+			while (CC_SERIAL.available())
 			{
 				if (i == BUFFER_SIZE)
 				{
@@ -77,7 +88,7 @@ void loop()
 					break;
 				}
 
-				buffer[i] = (char) Serial.read();
+				buffer[i] = (char) CC_SERIAL.read();
 				i++;
 			}
 
@@ -87,12 +98,8 @@ void loop()
 		}
 	}
 
-	/* Respond to buffer overflows, process the message */
-	if (overflowed)
-	{
-		/* Do nothing, lol */
-	}
-	else
+	/* If the buffer hasn't overflowed, process the message */
+	if (!overflowed)
 	{
 		/* Process the message */
 		for (int j = 0; j < i; j++)
