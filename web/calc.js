@@ -1,5 +1,9 @@
-// ThingSpeak url: Define your channel and API read key in a separate file.
-var thingspeakURL = "http://api.thingspeak.com/channels/" + channel + "/";
+/* calc.js, Electricity usage calculations */
+
+/* Thingspeak URLs. Channel details are defined in feed_details.js */
+var tsPowerURL = "http://api.thingspeak.com/channels/" + powerChannel + "/";
+var tsEnergyURL = "http://api.thingspeak.com/channels/" + energyChannel + "/";
+var tsUpdateURL = "http://api.thingspeak.com/update";
 
 // A map to define the Thingspeak field number for each data stream.
 var fields = {
@@ -10,22 +14,22 @@ var fields = {
 };
 
 /* Store historical data so it doesn't have to be re-downloaded & re-processed.
- *	powerHist[field.id][dd:mm:yy] = [[date, value], ...]
- *	energyHist[field.id][dd:mm:yy] = value
- *	graphHist[field.id][dd:mm:yy] = [[date, log(value), {tooltip: ...}], ...]
+ *	powerHist[field.id][datestamp] = [[date, value], ...]
+ *	energyHist[field.id][datestamp] = value
+ *	graphHist[field.id][datestamp] = [[date, log(value), {tooltip: ...}], ...]
  */
 var powerHist = {};
 var energyHist = {};
 var graphHist = {};
 
-// Graph preferences.
+/* Graph & energy preferences */
 var gPrefs = { /* start, end, field */ };
-
-// Energy preferences.
 var ePrefs = { /* start, end, field */ };
 
+
 $(document).ready(function($) {
-	layoutInit(); // From layout.js
+	// Initialise data structures, html
+	layoutInit();
 	historyInit();
 	prefsInit();	
 
@@ -38,19 +42,10 @@ $(document).ready(function($) {
 	calcHotWater();
 });
 
-// Fetch the latest power data and update the page accordingly.
-function livePower() {
-	var url = thingspeakURL + "feeds/last.json?callback=?&offset=10&key=" + readKey;
-	$.getJSON(url, function(data) {
-		if (data.field1) {
-			$("#total-power").html(data.field1);
-			$("#peak-power").html(data.field2);
-			$("#offpeak-power").html(data.field3);
-		}
-	});
-}
+/* ----------------------------- */
+/* Data Initialisation Functions */
 
-// Setup the history super objects.
+/* Setup the history super objects */
 function historyInit() {
 	for (var f in fields) {
 		powerHist[fields[f].id] = {};
@@ -59,81 +54,142 @@ function historyInit() {
 	}
 }
 
-// Setup graph & energy defaults.
+/* Setup graph & energy defaults */
 function prefsInit() {
 	var time = daysAgo(0);
 	gPrefs.start = time.start;
 	gPrefs.end = time.end;
 	gPrefs.field = fields.total;
-
 	ePrefs.start = time.start;
 	ePrefs.end = time.end;
 	ePrefs.field = fields.total;	
 }
 
-// Update the energy integral to meet the user's desires.
-function updateEnergy() {
-	var stamp = dateStamp(ePrefs.start, ePrefs.end);
-	var fieldID = ePrefs.field.id;
 
-	if (typeof(energyHist[fieldID][stamp]) !== 'undefined') {
-		$("#energy").html(energyHist[fieldID][stamp]);
-	} else if (typeof(powerHist[fieldID][stamp]) !== 'undefined') {
-		var energy = calcEnergy(powerHist[fieldID][stamp]);
-		energy = Math.round(energy*100)/100;
-		$("#energy").html(energy);
-		energyHist[fieldID][stamp] = energy;
-	} else {
-		var download = getData({start: ePrefs.start, end: ePrefs.end}, ePrefs.field);
-		$.when(download.handler).done(function(junk) {
-			// Cache data straight away.
-			powerHist[fieldID][stamp] = download.data;
-			
-			var energy = calcEnergy(download.data);
-			energy = Math.round(energy*100)/100;
-			$("#energy").html(energy);
-			energyHist[fieldID][stamp] = energy;
-		});
-	}
-
-	updateEnergyInfo(); // layout.js
+/* Fetch the latest power data and update the page accordingly */
+function livePower() {
+	var url = tsPowerURL + "feeds/last.json?callback=?";
+	var params = {
+		offset: 10,
+		key: powerKey,
+	};
+	$.getJSON(url, params, function(data) {
+		if (data.field1) {
+			$("#total-power").html(data.field1);
+			$("#peak-power").html(data.field2);
+			$("#offpeak-power").html(data.field3);
+		}
+	});
 }
 
-// Update the graph to display the desired information.
-function updateGraph(dependantFunc) {
+// Update the energy value to meet the user's desires.
+function updateEnergy() {
+	// Get the energy data and call the layout updater from layout.js
+	getEnergy(ePrefs.start, ePrefs.end, ePrefs.field, updateEnergyInfo);
+}
+
+// Fetch the energy total for a given time period by whatever means necessary.
+function getEnergy(start, end, field, callback) {
+	var stamp = dateStamp(start, end);
+
+	// Check for a locally cached energy value
+	if (typeof(energyHist[field.id][stamp]) !== 'undefined') {
+		callback();
+		return;
+	}
+	
+	// Check for locally cached power data
+	if (typeof(powerHist[field.id][stamp]) !== 'undefined') {
+		var energy = calcEnergy(powerHist[field.id][stamp]);
+		energy = Math.round(energy*100)/100;
+		$("#energy").html(energy);
+		energyHist[field.id][stamp] = energy;
+
+		callback();
+		return;
+	}
+
+	// TODO: Check for a remotely cached energy value
+
+	// Otherwise, download power data and calculate
+	var download = getData(start, end, field);
+	$.when(download.handler).done(function() {
+		// Cache data straight away
+		powerHist[field.id][stamp] = download.data;
+
+		var energy = calcEnergy(download.data);
+		energy = Math.round(energy*100)/100;
+		$("#energy").html(energy);
+		energyHist[field.id][stamp] = energy;
+
+		callback();
+	});
+}
+
+/* Send a daily energy total to ThingSpeak */
+function uploadEnergy(value, start, end) {
+	// Only upload whole day energy values
+	if (start.getDate() + 1 == end.getDate() &&
+	    start.getHours() == 0 && end.getHours == 0)
+	{
+		// Upload energy data at 23:59:59
+		var createdAt = new Date(end.getTime());
+		createdAt.setSeconds(time.getSeconds() - 1);
+		createdAt = createdAt.toJSON().replace("Z", "");
+
+		var data = {
+			key: energyKey,
+			field1: value,
+			created_at: createdAt,
+		}
+
+		$.post(tsUpdateURL, data);
+	}
+}
+
+/* Attempt to retrieve already computed energy values from Thingspeak */
+function downloadEnergy(date, numDays) {
+	// TODO: This.
+}
+
+/* Update the power graph to reflect the user's choice of dates */
+function updateGraph(callback) {
 	var stamp = dateStamp(gPrefs.start, gPrefs.end);
 	var fieldID = gPrefs.field.id;
 	
-	// Download data only if the cache is empty.
+	// Check for cached graph data
 	if (typeof(graphHist[fieldID][stamp]) !== 'undefined') {
 		graphData("power-graph", graphHist[fieldID][stamp]);
 		
-		if (typeof(dependantFunc) === "function") {
-				dependantFunc();
+		if (typeof(callback) === "function") {
+				callback();
 		}
-	} else {
-		var download = getData({start: gPrefs.start, end: gPrefs.end}, gPrefs.field);
+	}
+	// Otherwise download & graph	
+	else {
+		var download = getData(gPrefs.start, gPrefs.end, gPrefs.field);
 		$.when(download.handler).done(function(junk) {
-			// Store the data and run the dependant function.
+			// Cache the data locally			
 			powerHist[fieldID][stamp] = download.data;
 
-			if (typeof(dependantFunc) === "function") {
-				dependantFunc();
-			}
-
+			// Prepare and cache the graph data
 			var chartData = timeAverage(download.data, 600);
 			chartData = graphData("power-graph", chartData);
 			graphHist[fieldID][stamp] = chartData;
+			
+			if (typeof(callback) === "function") {
+				callback();
+			}
 		});
 	}
 
 	updateGraphInfo(); // layout.js
 }
 
-
-// Calculate the off-peak hotwater energy usage.
+/* Calculate the off-peak hotwater energy usage */
 function calcHotWater() {
-	var download = getData(offPeakTime(), fields.offpeak);
+	var offpeak = offPeakTime();
+	var download = getData(offpeak.start, offpeak.end, fields.offpeak);
 	$.when(download.handler).done(function(junk) {
 		var energy = calcEnergy(download.data);
 		energy = Math.round(energy*100)/100;
@@ -141,71 +197,23 @@ function calcHotWater() {
 	});
 }
 
-// Describe the interval of time from 'x' hours ago to now.
-function hoursAgo(x) {
-	var end = new Date();
-	var start = new Date();
-	start.setHours(start.getHours() - x);
-	return {start: start, end: end};
-}
-
-// Create a time interval for a past set of days. x = 0 for today.
-function daysAgo(x, duration) {
-	if (typeof(duration) === 'undefined') {
-		duration = 1;
-	}
-
-	var now = new Date();
-
-	// Rollback the desired number of days.
-	var start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - x, 0, 0, 0, 0);
-
-	var end;
-	if (x == 0) {
-		end = now; // spooky.
-	} else {
-		end = new Date(start.getTime());
-		end.setDate(end.getDate() + (duration - 1));
-		end.setHours(23);
-		end.setMinutes(59);
-		end.setSeconds(59);
-	}
-
-	return {start: start, end: end};
-}
-
-// Create a time interval for last night's off peak period (10pm-7am).
-function offPeakTime() {
-	var start = new Date();
-	var end = new Date();
-
-	start.setDate(start.getDate() - 1);
-	start.setHours(22);
-	start.setMinutes(0);
-	start.setSeconds(0);
-
-	end.setHours(7);
-	end.setMinutes(0);
-	end.setSeconds(0);
-
-	return {start: start, end: end};
-}
-
-// Fetch a single field's data for a given start and end time.
-function getData(time, field) {
-	var url = thingspeakURL + "field/" + field.number + ".json";
-	url += "?callback=?&offset=10&key=" + readKey;
-
-	url += "&start=" + thingspeakDate(time.start) + "&end=" + thingspeakDate(time.end);
-
+/* Fetch a single field's data for a given start and end time */
+function getData(start, end, field) {
+	var url = tsPowerURL + "field/" + field.number + ".json?callback=?";
+	var params = {
+		offset: 10,
+		key: powerKey,
+		start: thingspeakDate(start),
+		end: thingspeakDate(end),
+	};
 	var data = [];
-	var fieldID = "field" + field.number;
-	var handler = $.getJSON(url, function(rawData) {
+	var fieldStr = "field" + field.number;
+	var handler = $.getJSON(url, params, function(rawData) {
 		var l = rawData.feeds.length;
 		for (var i = 0; i < l; i++) {
 			var dateString = rawData.feeds[i].created_at;
 			var date = new Date(dateString);
-			var power = parseInt(rawData.feeds[i][fieldID]);
+			var power = parseInt(rawData.feeds[i][fieldStr]);
 			data.push([date, power]);
 		}
 	});
@@ -213,8 +221,9 @@ function getData(time, field) {
 	return {handler: handler, data: data};
 }
 
-// Condense a large data set into a smaller, time averaged data set.
-// The given interval, in seconds, defines the minimum spacing between data points in the output.
+/* Condense a large data set into a smaller, time averaged data set.
+ * The given interval, in seconds, defines the minimum spacing between data
+ * points in the output. */
 function timeAverage(data, interval) {
 	var l = data.length;
 	var newData = [];
@@ -232,6 +241,12 @@ function timeAverage(data, interval) {
 		var weightedPower = 0.0; // watt seconds (J)
 
 		while (data[i][0] < intervalEnd && i < l - 1) {
+			// NaN busting
+			if (isNaN(data[i][1])) {
+				i++;
+				continue;
+			}			
+
 			var duration = data[i + 1][0].getTime();
 			duration -= data[i][0].getTime();
 			duration /= 1000;
@@ -257,6 +272,11 @@ function calcEnergy(data) {
 	var power = 0.0; // watts
 
 	for (var i = 0; i < l - 1; i++) {
+		// NaN busting
+		if (isNaN(data[i][1])) {
+			continue;
+		}
+
 		// Calculate the duration of each power level
 		duration = data[i + 1][0].getTime();
 		duration -= data[i][0].getTime();
@@ -312,8 +332,7 @@ function graphData(graphID, data) {
 function downloadCSV() {
 	var fieldID = $("#dl-field").val();
 	fieldNo = fields[fieldID].number;
-	var url = thingspeakURL + "field/" + fieldNo + ".csv";
-	url += "?offset=10&key=" + readKey;
+	var url = tsPowerURL + "field/" + fieldNo + ".csv";
 
 	var start = $("#dl-start-date").val();
 	start = $.datepicker.parseDate("dd/mm/y", start);
@@ -323,8 +342,14 @@ function downloadCSV() {
 	start = thingspeakDate(start)
 	end = thingspeakDate(end);
 
-	url += "&start=" + start;
-	url += "&end=" + end;
+	var params = {
+		offset: 10,
+		key: powerKey,
+		start: start,
+		end: end,
+	};
+
+	url += "?" + $.param(params);
 	window.open(url, "_blank");
 }
 
@@ -349,29 +374,4 @@ function downloadTimeAveraged() {
 
 	var encodedUri = encodeURI(csvData);
 	window.open(encodedUri);
-}
-
-// Convert a date object to YYYY-MM-DD%20HH-mm-SS
-function thingspeakDate(date) {
-	var string = date.toISOString();
-	string = string.substr(0, string.indexOf('.'));
-	string.replace("T", "%20");
-	return string;
-}
-
-// Date stamps for stored historical data.
-function dateStamp(start, end) {
-	var stamp = twoDigits(start.getHours()) + "t"
-	stamp += $.datepicker.formatDate("dd:mm:yy~", start);
-	stamp += twoDigits(end.getHours()) + "t";
-	stamp += $.datepicker.formatDate("dd:mm:yy", end);
-	return stamp;
-}
-
-function twoDigits(x) {
-	if (x < 10) {
-		return "0" + x.toString();
-	} else {
-		return x.toString();
-	}
 }

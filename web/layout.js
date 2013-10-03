@@ -1,10 +1,13 @@
+/* layout.js, Page filling and layout modification */
+
 function layoutInit() {
 	fieldSelectSetup();
 	dateSetup();
 	navbarSetup();
+	monthSelectSetup();
 }
 
-// Make the navigation bar update when clicked.
+/* Make the navigation bar update when clicked */
 function navbarSetup() {
 	$('.nav li').click(function(event) {
 		$('.nav li').each(function(index) {
@@ -15,7 +18,28 @@ function navbarSetup() {
 	});
 }
 
-// Fill out field selector options.
+/* Fill in month selector options */
+function monthSelectSetup() {
+	var selectors = [ "#summary-month", ];
+
+	var options = "";
+
+	var date = new Date();
+
+	for (var i = 0; i < 12; i++) {
+		var option = "<option value=" + date.getMonth() + ">";
+		option += $.datepicker.formatDate("MM", date);
+		option += "</option>";
+		options += option;
+		date.setMonth(date.getMonth() - 1);
+	}
+
+	for (var i in selectors) {
+		$(selectors[i]).html(options);
+	}
+}
+
+/* Fill out field selector options */
 function fieldSelectSetup() {
 	var selectors = [
 		"#dl-field",
@@ -35,7 +59,7 @@ function fieldSelectSetup() {
 	}
 }
 
-// Initialise date selectors
+/* Initialise date selectors */
 function dateSetup() {
 	var names = [
 		"graph",
@@ -71,12 +95,12 @@ function dateSetup() {
 	}	
 }
 
-// Interpret the user's input to the graph preferences box.
+/* Interpret the user's input to the graph preferences box */
 function parseGraphPrefs() {
 	parsePrefs("graph", gPrefs, updateGraph);
 }
 
-// Interpret the user's input to the energy preferences box.
+/* Interpret the user's input to the energy preferences box */
 function parseEnergyPrefs() {
 	parsePrefs("energy", ePrefs, updateEnergy);
 }
@@ -122,7 +146,7 @@ function parsePrefs(name, prefs, updateFunc, oppFunc) {
 	}
 }
 
-// Create a popover with the chart info.
+/* Create a popover with the chart info */
 function updateGraphInfo() {
 	// Tooltips
 	var title = gPrefs.field.name + "\n";
@@ -158,90 +182,4 @@ function updateEnergyInfo() {
 	// Title
 	title = doubleDate(ePrefs.start, ePrefs.end, "Today", false);
 	$("#energy-info").html(title);
-}
-
-// Compact expression of a time interval.
-function doubleDate(start, end, today, time) {
-	var dateString = "";
-	// Return "today" or similar for single days.
-	if (isToday(start) || sameDay(start, end)) {
-		dateString = niceDay(start, today);
-		if (time) {
-			dateString += " " + timeInterval(start, end);
-		}
-	}
-	// Otherwise return an interval, optionally with times.
-	else {
-		if (time) {
-			dateString = niceTime(start.getHours()) + " ";
-		}
-		dateString += niceDay(start);
-
-		// Compound dates in the same month.
-		if (start.getMonth() == end.getMonth() && !time) {
-			dateString += "-" + end.getDate();
-		}
-		else {
-			dateString += " - ";
-			if (time) {
-				dateString += niceTime(end.getHours()) + " ";
-			}
-			dateString += niceDay(end);
-		}
-	}
-	return dateString;
-}
-
-// Make dates like August 16, today, yesterday.
-function niceDay(date, today) {
-	var nice;
-	if (isToday(date) && typeof(today) !== 'undefined') {
-		nice = today;
-	} else {
-		nice = $.datepicker.formatDate("M d", date);
-	}
-	return nice;
-}
-
-// Convert values to am/pm time
-function niceTime(x) {	
-	if (x <= 11) {
-		return (((x + 11) % 12) + 1) + "am";
-	} else {
-		return (((x - 1) % 12) + 1) + "pm";
-	}
-}
-
-function isToday(date) {
-	var today = new Date();
-	if (	date.getDate() == today.getDate() &&
-		date.getMonth() == today.getMonth() &&
-		date.getFullYear() == today.getFullYear())
-	{
-		return true;
-	} else {
-		return false;
-	}
-}
-
-function timeInterval(start, end) {
-	if (start.getHours() == 0 && end.getHours() == 0) {
-		return "";
-	}
-	var time = " (" + niceTime(start.getHours());
-	time += "-" + niceTime(end.getHours()) + ")";
-	return time;
-}
-
-function sameDay(start, end) {
-	if (start.getMonth() != end.getMonth() || start.getFullYear() != end.getFullYear()) {
-		return false;
-	}
-	if (start.getDate() == end.getDate()) {
-		return true;
-	}
-	if (start.getDate() == end.getDate() - 1 && start.getHours() == end.getHours()) {
-		return true;
-	}
-	return false;
 }
