@@ -1,10 +1,11 @@
 /* layout.js, Page filling and layout modification */
 
 function layoutInit() {
+	$("#graph-avg-interval").val(graphPrefs.avgInterval);
 	fieldSelectSetup();
-	dateSetup();
-	navbarSetup();
 	monthSelectSetup();
+	dateSelectSetup();
+	navbarSetup();
 }
 
 /* Make the navigation bar update when clicked */
@@ -13,17 +14,16 @@ function navbarSetup() {
 		$('.nav li').each(function(index) {
 			$(this).removeClass('active');
 		});
-	
+
 		$(this).addClass('active');
 	});
 }
 
-/* Fill in month selector options */
+/* Populate the month selector dropdowns */
 function monthSelectSetup() {
-	var selectors = [ "#summary-month", ];
+	var selectors = ["#summary-month"];
 
 	var options = "";
-
 	var date = new Date();
 
 	for (var i = 0; i < 12; i++) {
@@ -39,7 +39,7 @@ function monthSelectSetup() {
 	}
 }
 
-/* Fill out field selector options */
+/* Populate the field selector dropdowns */
 function fieldSelectSetup() {
 	var selectors = [
 		"#dl-field",
@@ -59,58 +59,54 @@ function fieldSelectSetup() {
 	}
 }
 
-/* Initialise date selectors */
-function dateSetup() {
-	var names = [
-		"graph",
-		"energy",
-	];
+/* Initialise the date and time selectors used for the preference dialogues */
+function dateSelectSetup() {
+	// Selector prefixes for tags to receive date & time selectors
+	var dateAndTime = ["graph", "energy"];
+	// Selector prefixes for tags to receive date selectors only
+	var dateOnly = ["dl"];
 
-	var dateOnly = [
-		"dl",
-	];
-
-	// Hours
+	// Create a list of select options, for all 24 hours
 	var hours = "<option value=0>12am</option>"
 	for (var i = 1; i <= 23; i++) {
-		var hour;
-		hour = niceTime(i);
 		hours += "<option value=" + i + ">"
-		hours += hour + "</option>";
+		hours += twelveHourTimeString(i) + "</option>";
 	}
 
-	// Dates, using JQuery UI datepickers
+	// jQuery UI datepicker preferences
 	var dpOptions = {dateFormat: "dd/mm/y"};
 
-	for (var i in names) {
-		$("#" + names[i] + "-start-hour").html(hours);
-		$("#" + names[i] + "-end-hour").html(hours);
-		$("#" + names[i] + "-start-date").datepicker(dpOptions);
-		$("#" + names[i] + "-end-date").datepicker(dpOptions);
+	for (var i in dateAndTime) {
+		$("#" + dateAndTime[i] + "-start-hour").html(hours);
+		$("#" + dateAndTime[i] + "-end-hour").html(hours);
+		$("#" + dateAndTime[i] + "-start-date").datepicker(dpOptions);
+		$("#" + dateAndTime[i] + "-end-date").datepicker(dpOptions);
 	}
 
 	for (var i in dateOnly) {
 		$("#" + dateOnly[i] + "-start-date").datepicker(dpOptions);
-		$("#" + dateOnly[i] + "-end-date").datepicker(dpOptions);	
-	}	
+		$("#" + dateOnly[i] + "-end-date").datepicker(dpOptions);
+	}
 }
 
 /* Interpret the user's input to the graph preferences box */
 function parseGraphPrefs() {
-	parsePrefs("graph", gPrefs, updateGraph);
+	var avgInterval = $("#graph-avg-interval").val();
+	graphPrefs.avgInterval = parseInt(avgInterval, 10);
+	parsePrefs("graph", graphPrefs, updateGraph);
 }
 
 /* Interpret the user's input to the energy preferences box */
 function parseEnergyPrefs() {
-	parsePrefs("energy", ePrefs, updateEnergy);
+	parsePrefs("energy", energyPrefs, updateEnergy);
 }
 
 /*
  * Generic function to parse a field, a start date, and an end date.
  * Relies on the elements having IDs like name-field, name-start-date, name-options
  */
-function parsePrefs(name, prefs, updateFunc, oppFunc) {
-	// Read the field/datastream to use	
+function parsePrefs(name, prefs, updateFunc) {
+	// Read the field/datastream to use
 	var fieldID = $("#" + name + "-field").val();
 
 	// Parse dates
@@ -130,12 +126,12 @@ function parsePrefs(name, prefs, updateFunc, oppFunc) {
 	// Work out where to write data, and what to update
 	var updateBoth = $("#" + name + "-sync").is(":checked");
 	if (updateBoth) {
-		ePrefs.field = fields[fieldID];
-		ePrefs.start = start;
-		ePrefs.end = end;
-		gPrefs.field = fields[fieldID];
-		gPrefs.start = start;
-		gPrefs.end = end;
+		energyPrefs.field = fields[fieldID];
+		energyPrefs.start = start;
+		energyPrefs.end = end;
+		graphPrefs.field = fields[fieldID];
+		graphPrefs.start = start;
+		graphPrefs.end = end;
 
 		updateGraph(updateEnergy);
 	} else {
@@ -146,11 +142,11 @@ function parsePrefs(name, prefs, updateFunc, oppFunc) {
 	}
 }
 
-/* Create a popover with the chart info */
+/* Update the header describing the graph */
 function updateGraphInfo() {
 	// Tooltips
-	var title = gPrefs.field.name + "\n";
-	title += doubleDate(gPrefs.start, gPrefs.end, "Today", true);
+	var title = graphPrefs.field.name + "\n";
+	title += doubleDayString(graphPrefs.start, graphPrefs.end, "Today", true);
 
 	var options = {
 		placement: "top",
@@ -162,14 +158,15 @@ function updateGraphInfo() {
 	$("#graph-info").tooltip(options);
 
 	// Title
-	title = doubleDate(gPrefs.start, gPrefs.end, "today", false);
+	title = doubleDayString(graphPrefs.start, graphPrefs.end, "today", false);
 	$("#graph-info").html(title);
 }
 
+/* Update the header describing the energy tally */
 function updateEnergyInfo() {
 	// Tooltips
-	var title = ePrefs.field.name;
-	title += " usage\n" + doubleDate(ePrefs.start, ePrefs.end, "Today", true);
+	var title = energyPrefs.field.name;
+	title += " usage\n" + doubleDayString(energyPrefs.start, energyPrefs.end, "Today", true);
 
 	var options = {
 		placement: "bottom",
@@ -180,6 +177,18 @@ function updateEnergyInfo() {
 	$("#energy").tooltip(options);
 
 	// Title
-	title = doubleDate(ePrefs.start, ePrefs.end, "Today", false);
+	title = doubleDayString(energyPrefs.start, energyPrefs.end, "Today", false);
 	$("#energy-info").html(title);
+}
+
+/* Create a popover with the peak vs off-peak power data */
+function updatePowerPopover(peak, offpeak) {
+	var popoverText = "Peak: " + peak + " W\n";
+	popoverText += "Off-peak: " + offpeak + " W";
+	var options = {
+		placement: "bottom",
+		title: popoverText,
+	}
+	$("#total-power").tooltip('destroy');
+	$("#total-power").tooltip(options);
 }

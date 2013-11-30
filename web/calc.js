@@ -1,189 +1,195 @@
 /* calc.js, Electricity usage calculations */
 
-/* Thingspeak URLs. Channel details are defined in feed_details.js */
-var tsPowerURL = "http://api.thingspeak.com/channels/" + powerChannel + "/";
-var tsEnergyURL = "http://api.thingspeak.com/channels/" + energyChannel + "/";
+// Thingspeak URLs. Channel details are defined in feed_details.js
+var tsPowerURL = "http://api.thingspeak.com/channels/" + tsPowerChannel + "/";
 var tsUpdateURL = "http://api.thingspeak.com/update";
 
-// A map to define the Thingspeak field number for each data stream.
+// A map to define the Thingspeak field number for each data stream
 var fields = {
 	total: {number: 1, name: "Peak & off-peak power", id: "total"},
 	peak: {number: 2, name: "Peak power", id: "peak"},
 	offpeak: {number: 3, name: "Off-peak power", id: "offpeak"},
-	temp: {number: 4, name: "Temperature", id: "temp"},
+	temp: {number: 4, name: "Temperature", id: "temp"}
 };
 
-/* Store historical data so it doesn't have to be re-downloaded & re-processed.
+/* Store historical data so it doesn't have to be re-downloaded & re-processed
  *	powerHist[field.id][datestamp] = [[date, value], ...]
  *	energyHist[field.id][datestamp] = value
- *	graphHist[field.id][datestamp] = [[date, log(value), {tooltip: ...}], ...]
+ *	graphHist[field.id][avgInterval][datestamp] = [[date, log(value), {tooltip: ...}], ...]
  */
 var powerHist = {};
 var energyHist = {};
 var graphHist = {};
 
-/* Graph & energy preferences */
-var gPrefs = { /* start, end, field */ };
-var ePrefs = { /* start, end, field */ };
-
+var graphPrefs = {start: null, end: null, field: fields.total, avgInterval: 10};
+var energyPrefs = {start: null, end: null, field: fields.total};
 
 $(document).ready(function($) {
-	// Initialise data structures, html
+	// Initialise data structures, layout
 	layoutInit();
 	historyInit();
-	prefsInit();	
+	prefsInit();
 
 	// Live power every 30 seconds
 	livePower();
 	setInterval('livePower()', 30000);
 
-	// Call the graph updater with the energy updater as a dependant.
+	// Call the graph updater with the energy updater as a dependant
 	updateGraph(updateEnergy);
 	calcHotWater();
 });
 
 /* ----------------------------- */
 /* Data Initialisation Functions */
+/* ----------------------------- */
 
 /* Setup the history super objects */
 function historyInit() {
+	var avgInterval = graphPrefs.avgInterval;
 	for (var f in fields) {
 		powerHist[fields[f].id] = {};
 		energyHist[fields[f].id] = {};
 		graphHist[fields[f].id] = {};
+		graphHist[fields[f].id][avgInterval] = {};
 	}
 }
 
-/* Setup graph & energy defaults */
+/* Setup graph & energy default preferences */
 function prefsInit() {
-	var time = daysAgo(0);
-	gPrefs.start = time.start;
-	gPrefs.end = time.end;
-	gPrefs.field = fields.total;
-	ePrefs.start = time.start;
-	ePrefs.end = time.end;
-	ePrefs.field = fields.total;	
+	var start = new Date();
+	start.setHours(0);
+	start.setMinutes(0);
+	start.setSeconds(0);
+	start.setMilliseconds(0);
+	var end = new Date();
+	end.setHours(end.getHours() + 1);
+	end.setMinutes(0);
+	end.setSeconds(0);
+	end.setMilliseconds(0);
+	graphPrefs.start = start;
+	energyPrefs.start = start;
+	graphPrefs.end = end;
+	energyPrefs.end = end;
 }
 
+/* ------------------ */
+/* Main Functionality */
+/* ------------------ */
 
 /* Fetch the latest power data and update the page accordingly */
 function livePower() {
 	var url = tsPowerURL + "feeds/last.json?callback=?";
 	var params = {
 		offset: 10,
-		key: powerKey,
+		key: tsPowerKey,
 	};
 	$.getJSON(url, params, function(data) {
 		if (data.field1) {
 			$("#total-power").html(data.field1);
-			$("#peak-power").html(data.field2);
-			$("#offpeak-power").html(data.field3);
+			var peak = parseInt(data.field2, 10);
+			var offpeak = parseInt(data.field3, 10);
+			updatePowerPopover(peak, offpeak);
 		}
 	});
 }
 
-// Update the energy value to meet the user's desires.
+/* Update the energy integral */
 function updateEnergy() {
-	// Get the energy data and call the layout updater from layout.js
-	getEnergy(ePrefs.start, ePrefs.end, ePrefs.field, updateEnergyInfo);
-}
+	// Update the page headings, etc
+	updateEnergyInfo();
 
-// Fetch the energy total for a given time period by whatever means necessary.
-function getEnergy(start, end, field, callback) {
-	var stamp = dateStamp(start, end);
+	var stamp = dateStamp(energyPrefs.start, energyPrefs.end);
+	var fieldID = energyPrefs.field.id;
 
-	// Check for a locally cached energy value
-	if (typeof(energyHist[field.id][stamp]) !== 'undefined') {
-		callback();
-		return;
-	}
-	
-	// Check for locally cached power data
-	if (typeof(powerHist[field.id][stamp]) !== 'undefined') {
-		var energy = calcEnergy(powerHist[field.id][stamp]);
-		energy = Math.round(energy*100)/100;
+	// Use cached energy data, if it exists
+	if (typeof(energyHist[fieldID][stamp]) !== 'undefined') {
+		var energy = energyHist[fieldID][stamp];
 		$("#energy").html(energy);
-		energyHist[field.id][stamp] = energy;
-
-		callback();
 		return;
 	}
 
-	// TODO: Check for a remotely cached energy value
+	// Use cached power data if it exists
+	if (typeof(powerHist[fieldID][stamp]) !== 'undefined') {
+		var energy = calcEnergy(powerHist[fieldID][stamp]);
+		energy = Math.round(energy*100)/100;
+		energyHist[fieldID][stamp] = energy;
+		$("#energy").html(energy);
+		return;
+	}
 
 	// Otherwise, download power data and calculate
-	var download = getData(start, end, field);
+	var download = getData(energyPrefs.start, energyPrefs.end, energyPrefs.field);
 	$.when(download.handler).done(function() {
-		// Cache data straight away
-		powerHist[field.id][stamp] = download.data;
+		// Cache raw power data for future use
+		powerHist[fieldID][stamp] = download.data;
 
 		var energy = calcEnergy(download.data);
 		energy = Math.round(energy*100)/100;
+		energyHist[fieldID][stamp] = energy;
 		$("#energy").html(energy);
-		energyHist[field.id][stamp] = energy;
-
-		callback();
 	});
 }
 
-/* Send a daily energy total to ThingSpeak */
-function uploadEnergy(value, start, end) {
-	// Only upload whole day energy values
-	if (start.getDate() + 1 == end.getDate() &&
-	    start.getHours() == 0 && end.getHours == 0)
-	{
-		// Upload energy data at 23:59:59
-		var createdAt = new Date(end.getTime());
-		createdAt.setSeconds(time.getSeconds() - 1);
-		createdAt = createdAt.toJSON().replace("Z", "");
-
-		var data = {
-			key: energyKey,
-			field1: value,
-			created_at: createdAt,
-		}
-
-		$.post(tsUpdateURL, data);
-	}
-}
-
-/* Attempt to retrieve already computed energy values from Thingspeak */
-function downloadEnergy(date, numDays) {
-	// TODO: This.
-}
-
-/* Update the power graph to reflect the user's choice of dates */
+/* Update the power graph */
 function updateGraph(callback) {
-	var stamp = dateStamp(gPrefs.start, gPrefs.end);
-	var fieldID = gPrefs.field.id;
-	
-	// Check for cached graph data
-	if (typeof(graphHist[fieldID][stamp]) !== 'undefined') {
-		graphData("power-graph", graphHist[fieldID][stamp]);
-		
+	// Update the page headings, etc
+	updateGraphInfo();
+
+	var avgInterval = graphPrefs.avgInterval;
+	var stamp = dateStamp(graphPrefs.start, graphPrefs.end);
+	var fieldID = graphPrefs.field.id;
+
+	// Use cached graph data, if it exists
+	var cachedGraphData = graphHist[fieldID][avgInterval];
+	if (typeof(cachedGraphData) !== "undefined" &&
+	    cachedGraphData.hasOwnProperty(stamp))
+	{
+		graphData("power-graph", graphHist[fieldID][avgInterval][stamp]);
+
 		if (typeof(callback) === "function") {
 				callback();
 		}
-	}
-	// Otherwise download & graph	
-	else {
-		var download = getData(gPrefs.start, gPrefs.end, gPrefs.field);
-		$.when(download.handler).done(function(junk) {
-			// Cache the data locally			
-			powerHist[fieldID][stamp] = download.data;
-
-			// Prepare and cache the graph data
-			var chartData = timeAverage(download.data, 600);
-			chartData = graphData("power-graph", chartData);
-			graphHist[fieldID][stamp] = chartData;
-			
-			if (typeof(callback) === "function") {
-				callback();
-			}
-		});
+		return;
 	}
 
-	updateGraphInfo(); // layout.js
+	// If the time averaging has changed, use cached power data
+	if (typeof(powerHist[fieldID][stamp]) !== "undefined") {
+		var rawData = powerHist[fieldID][stamp];
+		var chartData = timeAverage(rawData, avgInterval*60);
+		chartData = graphData("power-graph", chartData);
+
+		// Create a cache for the graph data if none exists
+		if (typeof(graphHist[fieldID][avgInterval]) === "undefined") {
+			graphHist[fieldID][avgInterval] = {};
+		}
+		graphHist[fieldID][avgInterval][stamp] = chartData;
+
+		if (typeof(callback) === "function") {
+			callback();
+		}
+		return;
+	}
+
+	// Otherwise, download data from Thingspeak
+	var download = getData(graphPrefs.start, graphPrefs.end, graphPrefs.field);
+	$.when(download.handler).done(function(junk) {
+		// Cache the data locally
+		powerHist[fieldID][stamp] = download.data;
+
+		// Prepare and cache the graph data
+		var chartData = timeAverage(download.data, avgInterval*60);
+		chartData = graphData("power-graph", chartData);
+
+		// Create a cache for the graph data if none exists
+		if (typeof(graphHist[fieldID][avgInterval]) === "undefined") {
+			graphHist[fieldID][avgInterval] = {};
+		}
+		graphHist[fieldID][avgInterval][stamp] = chartData;
+
+		if (typeof(callback) === "function") {
+			callback();
+		}
+	});
 }
 
 /* Calculate the off-peak hotwater energy usage */
@@ -202,7 +208,7 @@ function getData(start, end, field) {
 	var url = tsPowerURL + "field/" + field.number + ".json?callback=?";
 	var params = {
 		offset: 10,
-		key: powerKey,
+		key: tsPowerKey,
 		start: thingspeakDate(start),
 		end: thingspeakDate(end),
 	};
@@ -245,25 +251,25 @@ function timeAverage(data, interval) {
 			if (isNaN(data[i][1])) {
 				i++;
 				continue;
-			}			
+			}
 
 			var duration = data[i + 1][0].getTime();
 			duration -= data[i][0].getTime();
 			duration /= 1000;
 			durationSum += duration;
-			weightedPower += data[i][1]*duration;		
+			weightedPower += data[i][1]*duration;
 			i++;
 		}
 		var avgPower = weightedPower/durationSum;
 		avgPower = Math.round(avgPower);
-		// Use the start of the interval as the timestamp. 
-		newData.push([start, avgPower]);	
+		// Use the start of the interval as the timestamp.
+		newData.push([start, avgPower]);
 	}
 
 	return newData;
 }
 
-// Calculate the energy used in a given period by integrating power over time
+/* Calculate the energy used in a given period by integrating power over time */
 function calcEnergy(data) {
 	var l = data.length;
 	var energy = 0.0; // Wh
@@ -289,18 +295,19 @@ function calcEnergy(data) {
 	return energy/1000; // kWh
 }
 
-// Create a graph from an array of data pairs.
+/* Create a graph from an array of data pairs */
 function graphData(graphID, data) {
+	var graphSelector = "#" + graphID;
 	// Clear out the old graph
-	$("#" + graphID).html("");
+	$(graphSelector).html("");
 
-	// Check for empty data sets	
+	// Check for empty data sets
 	if (data.length == 0) {
-		$("#" + graphID).html("<p>No data.</p>");
+		$(graphSelector).html("<p>No data.</p>");
 		return;
 	}
 
-	// If the data hasn't been graphed before take logarithms & add tooltips.	
+	// If the data hasn't been graphed before take logarithms & add tooltips.
 	if (typeof(data[0][2]) === 'undefined') {
 		for (var i = 0; i < data.length; i++) {
 			var tooltip = data[i][1] + "W at ";
@@ -308,13 +315,13 @@ function graphData(graphID, data) {
 			date = date.toTimeString();
 			tooltip += date.substr(0, date.lastIndexOf(":"));
 			data[i].push({tooltip: tooltip});
-		
+
 			// Logarithms!
 			data[i][1] = Math.log(data[i][1]);
 		}
 	}
 
-	$("#" + graphID).css("height", "800px");
+	$(graphSelector).css("height", "800px");
 	var options = {
 			show_y_labels: false,
 			label_max: false,
@@ -328,7 +335,7 @@ function graphData(graphID, data) {
 	return data;
 }
 
-// Send the user to a new tab to download the CSV data they've requested.
+/* Send the user to a new tab to download the CSV data they've requested */
 function downloadCSV() {
 	var fieldID = $("#dl-field").val();
 	fieldNo = fields[fieldID].number;
@@ -344,7 +351,7 @@ function downloadCSV() {
 
 	var params = {
 		offset: 10,
-		key: powerKey,
+		key: tsPowerKey,
 		start: start,
 		end: end,
 	};
@@ -353,15 +360,15 @@ function downloadCSV() {
 	window.open(url, "_blank");
 }
 
-// Download a time averaged data set.
+/* Download a time averaged data set */
 function downloadTimeAveraged() {
 	// Read interval & convert to seconds
 	var interval = $("#ta-interval").val();
 	interval = 60*parseInt(interval);
 
-	var stamp = dateStamp(gPrefs.start, gPrefs.end);
-	var data = powerHist[gPrefs.field.id][stamp];
-	data = timeAverage(data, interval);	
+	var stamp = dateStamp(graphPrefs.start, graphPrefs.end);
+	var data = powerHist[graphPrefs.field.id][stamp];
+	data = timeAverage(data, interval);
 
 	var csvData = "data:text/csv;charset=utf-8,";
 	data.forEach(function(dataPoint, index) {

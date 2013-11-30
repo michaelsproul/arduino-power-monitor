@@ -39,8 +39,6 @@
 			<div class="col-lg-4">
 			<h2>Power</h2>
 			<h1><span id="total-power">0</span><small> W</small></h1>
-			<h3><small>Peak: <span id="peak-power">0</span> W
-			Off-peak:&nbsp;<span id="offpeak-power">0</span> W</small></h3>
 			</div>
 
 			<div class="col-lg-4">
@@ -98,31 +96,26 @@
 						<h4 class="modal-title">Edit Graph</h4>
       				</div>
       				<div class="modal-body">
-						<b>Data source: </b><select id="graph-field"></select><br>
-						<b>Start: </b><select id="graph-start-hour"></select>
-						<input type="text" id="graph-start-date">
-						<br>
-						<b>End: </b><select id="graph-end-hour"></select>
-						<input type="text" id="graph-end-date">
-						<br>
-						<input type="checkbox" id="graph-sync"> Update the energy tally too.
-						</p>
+					<b>Data source: </b><select id="graph-field"></select><br>
+					<b>Start: </b><select id="graph-start-hour"></select>
+					<input type="text" id="graph-start-date">
+					<br>
+					<b>End: </b><select id="graph-end-hour"></select>
+					<input type="text" id="graph-end-date">
+					<br>
+					<b>Averaging Interval (minutes): </b><input type="number" id="graph-avg-interval"><br>
+					<input type="checkbox" id="graph-sync"> Update the energy tally too.
+					</p>
       				</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-						<button type="button" class="btn btn-primary" onclick="parseGraphPrefs()">Save changes</button>
-					</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-primary" onclick="parseGraphPrefs()">Save changes</button>
+				</div>
 				</div><!-- /.modal-content -->
 			</div><!-- /.modal-dialog -->
 		</div><!-- /.modal -->
 		<!-- For some reason the width must be set here for Raphael to work properly; css breaks everything -->
 		<div id="power-graph" style="width: 1000px;"></div>
-
-		<!-- Monthly Summary -->
-		<h2 id="monthly">Monthly Summary</h2>
-		<select id="summary-month"></select>
-		<button onclick="generateMonthSummary()">Generate</button>
-		<div id="summary-graph" style="width: 1000px;"></div>
 
 		<!-- Download -->
 		<h2 id="download">Download raw data</h2>
@@ -133,7 +126,7 @@
 		<br>
 		<h2 id="download">Download time averaged data</h2>
 		Download the data currently being displayed by the graph.<br>
-		Time interval (minutes): <input type="text" id="ta-interval" value="5"><br>
+		Averaging interval (minutes): <input type="text" id="ta-interval" value="5"><br>
 		<button onclick="downloadTimeAveraged()">Download</button>
 		<br>
 	</div><!-- /.container -->

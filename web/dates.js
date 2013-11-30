@@ -1,42 +1,5 @@
 /* dates.js, Useful date & time manipulations */
 
-/* ---------- */
-/* Functional */
-/* ---------- */
-
-/* Describe the interval of time from 'x' hours ago to now */
-function hoursAgo(x) {
-	var end = new Date();
-	var start = new Date();
-	start.setHours(start.getHours() - x);
-	return {start: start, end: end};
-}
-
-/* Create a time interval for a past set of days. x = 0 for today */
-function daysAgo(x, duration) {
-	if (typeof(duration) === 'undefined') {
-		duration = 1;
-	}
-
-	var now = new Date();
-
-	// Rollback the desired number of days.
-	var start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - x, 0, 0, 0, 0);
-
-	var end;
-	if (x == 0) {
-		end = now; // spooky.
-	} else {
-		end = new Date(start.getTime());
-		end.setDate(end.getDate() + (duration - 1));
-		end.setHours(23);
-		end.setMinutes(59);
-		end.setSeconds(59);
-	}
-
-	return {start: start, end: end};
-}
-
 /* Create a time interval for last night's off peak period (10pm-7am) */
 function offPeakTime() {
 	var start = new Date();
@@ -79,11 +42,7 @@ function sameDay(start, end) {
 	return false;
 }
 
-/* ---------- */
-/* Formatting */
-/* ---------- */
-
-// Convert a date object to a YYYY-MM-DD%20HH-mm-SS string.
+/* Convert a date object to a YYYY-MM-DD%20HH-mm-SS string */
 function thingspeakDate(date) {
 	var string = date.toISOString();
 	string = string.substr(0, string.indexOf('.'));
@@ -91,7 +50,7 @@ function thingspeakDate(date) {
 	return string;
 }
 
-// Date stamps for stored historical data.
+/* Date stamps for historical data */
 function dateStamp(start, end) {
 	var stamp = twoDigits(start.getHours()) + "t"
 	stamp += $.datepicker.formatDate("dd:mm:yy~", start);
@@ -109,21 +68,22 @@ function twoDigits(x) {
 }
 
 /* Compact expression of a time interval */
-function doubleDate(start, end, today, time) {
+function doubleDayString(start, end, today, time) {
 	var dateString = "";
+
 	// Return "today" or similar for single days.
 	if (isToday(start) || sameDay(start, end)) {
-		dateString = niceDay(start, today);
+		dateString = singleDayString(start, today);
 		if (time) {
-			dateString += " " + hourInterval(start, end);
+			dateString += " " + hourIntervalString(start, end);
 		}
 	}
 	// Otherwise return an interval, optionally with times.
 	else {
 		if (time) {
-			dateString = niceTime(start.getHours()) + " ";
+			dateString = twelveHourTimeString(start.getHours()) + " ";
 		}
-		dateString += niceDay(start);
+		dateString += singleDayString(start);
 
 		// Compound dates in the same month.
 		if (start.getMonth() == end.getMonth() && !time) {
@@ -132,16 +92,16 @@ function doubleDate(start, end, today, time) {
 		else {
 			dateString += " - ";
 			if (time) {
-				dateString += niceTime(end.getHours()) + " ";
+				dateString += twelveHourTimeString(end.getHours()) + " ";
 			}
-			dateString += niceDay(end);
+			dateString += singleDayString(end);
 		}
 	}
 	return dateString;
 }
 
-/* Make dates like August 16, today, yesterday */
-function niceDay(date, today) {
+/* Make dates like Aug 16, today, yesterday */
+function singleDayString(date, today) {
 	var nice;
 	if (isToday(date) && typeof(today) !== 'undefined') {
 		nice = today;
@@ -151,8 +111,8 @@ function niceDay(date, today) {
 	return nice;
 }
 
-/* Convert numbers to am/pm time */
-function niceTime(x) {	
+/* Format a number as 12 hour time */
+function twelveHourTimeString(x) {
 	if (x <= 11) {
 		return (((x + 11) % 12) + 1) + "am";
 	} else {
@@ -161,11 +121,11 @@ function niceTime(x) {
 }
 
 /* Compact hour to hour expression, e.g. (10am-2pm)*/
-function hourInterval(start, end) {
+function hourIntervalString(start, end) {
 	if (start.getHours() == 0 && end.getHours() == 0) {
 		return "";
 	}
-	var time = " (" + niceTime(start.getHours());
-	time += "-" + niceTime(end.getHours()) + ")";
+	var time = " (" + twelveHourTimeString(start.getHours());
+	time += "-" + twelveHourTimeString(end.getHours()) + ")";
 	return time;
 }
