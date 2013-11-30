@@ -1,7 +1,6 @@
 /* layout.js, Page filling and layout modification */
 
 function layoutInit() {
-	$("#graph-avg-interval").val(graphPrefs.avgInterval);
 	fieldSelectSetup();
 	monthSelectSetup();
 	dateSelectSetup();
@@ -133,6 +132,10 @@ function parsePrefs(name, prefs, updateFunc) {
 		graphPrefs.start = start;
 		graphPrefs.end = end;
 
+		// Update the preference boxes
+		syncGraphPrefs();
+		syncEnergyPrefs();
+
 		updateGraph(updateEnergy);
 	} else {
 		prefs.field = fields[fieldID];
@@ -140,6 +143,33 @@ function parsePrefs(name, prefs, updateFunc) {
 		prefs.end = end;
 		updateFunc();
 	}
+}
+
+/* Sync the energy preference box with energyPrefs */
+function syncEnergyPrefs() {
+	syncPrefs("energy", energyPrefs);
+}
+
+/* Sync the graph preferences box with graphPrefs */
+function syncGraphPrefs() {
+	$("#graph-avg-interval").val(graphPrefs.avgInterval);
+	syncPrefs("graph", graphPrefs);
+}
+
+/* Sync the page's values with those from energyPrefs/graphPrefs */
+function syncPrefs(name, prefs) {
+	// Update field selector
+	$("#" + name + "-field").val(prefs.field.id);
+
+	// Update start date
+	$("#" + name + "-start-hour").val(prefs.start.getHours());
+	var startDate = $.datepicker.formatDate("dd/mm/y", prefs.start);
+	$("#" + name + "-start-date").val(startDate);
+
+	// Update end date
+	$("#" + name + "-end-hour").val(prefs.end.getHours());
+	var endDate = $.datepicker.formatDate("dd/mm/y", prefs.end);
+	$("#" + name + "-end-date").val(endDate);
 }
 
 /* Update the header describing the graph */

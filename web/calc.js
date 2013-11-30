@@ -70,6 +70,10 @@ function prefsInit() {
 	energyPrefs.start = start;
 	graphPrefs.end = end;
 	energyPrefs.end = end;
+
+	// Update the page
+	syncGraphPrefs();
+	syncEnergyPrefs();
 }
 
 /* ------------------ */
