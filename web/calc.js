@@ -84,7 +84,7 @@ function prefsInit() {
 function livePower() {
 	var url = tsPowerURL + "feeds/last.json?callback=?";
 	var params = {
-		offset: 10,
+		offset: getTimezoneOffset(new Date()),
 		key: tsPowerKey,
 	};
 	$.getJSON(url, params, function(data) {
@@ -115,7 +115,7 @@ function updateEnergy() {
 	// Use cached power data if it exists
 	if (typeof(powerHist[fieldID][stamp]) !== 'undefined') {
 		var energy = calcEnergy(powerHist[fieldID][stamp]);
-		energy = Math.round(energy*100)/100;
+		energy = Math.round(energy * 100) / 100;
 		energyHist[fieldID][stamp] = energy;
 		$("#energy").html(energy);
 		return;
@@ -128,7 +128,7 @@ function updateEnergy() {
 		powerHist[fieldID][stamp] = download.data;
 
 		var energy = calcEnergy(download.data);
-		energy = Math.round(energy*100)/100;
+		energy = Math.round(energy * 100) / 100;
 		energyHist[fieldID][stamp] = energy;
 		$("#energy").html(energy);
 	});
@@ -146,7 +146,7 @@ function updateGraph(callback) {
 	// Use cached graph data, if it exists
 	var cachedGraphData = graphHist[fieldID][avgInterval];
 	if (typeof(cachedGraphData) !== "undefined" &&
-	    cachedGraphData.hasOwnProperty(stamp))
+		cachedGraphData.hasOwnProperty(stamp))
 	{
 		graphData("power-graph", graphHist[fieldID][avgInterval][stamp]);
 
@@ -211,7 +211,7 @@ function calcHotWater() {
 function getData(start, end, field) {
 	var url = tsPowerURL + "field/" + field.number + ".json?callback=?";
 	var params = {
-		offset: 10,
+		offset: getTimezoneOffset(start),
 		key: tsPowerKey,
 		start: thingspeakDate(start),
 		end: thingspeakDate(end),
@@ -350,14 +350,11 @@ function downloadCSV() {
 	var end = $("#dl-end-date").val();
 	end = $.datepicker.parseDate("dd/mm/y", end);
 
-	start = thingspeakDate(start)
-	end = thingspeakDate(end);
-
 	var params = {
-		offset: 10,
+		offset: getTimezoneOffset(start),
 		key: tsPowerKey,
-		start: start,
-		end: end,
+		start: thingspeakDate(start),
+		end: thingspeakDate(end),
 	};
 
 	url += "?" + $.param(params);
@@ -380,7 +377,7 @@ function downloadTimeAveraged() {
 		dataString += dataPoint[0].toTimeString();
 		dataString = dataString.substr(0, dataString.lastIndexOf(":") + 3);
 		dataString += "," + dataPoint[1];
-   		csvData += dataString + "\n";
+		csvData += dataString + "\n";
 	});
 
 	var encodedUri = encodeURI(csvData);

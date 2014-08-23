@@ -42,12 +42,9 @@ function sameDay(start, end) {
 	return false;
 }
 
-/* Convert a date object to a YYYY-MM-DD%20HH-mm-SS string */
+/* Convert a date object to a YYYY-MM-DD%20HH:mm:SS string in the current timezone. */
 function thingspeakDate(date) {
-	var string = date.toISOString();
-	string = string.substr(0, string.indexOf('.'));
-	string.replace("T", "%20");
-	return string;
+    return moment(date).format("YYYY[-]MM[-]DD HH[:]mm[:]ss");
 }
 
 /* Date stamps for historical data */
@@ -128,4 +125,10 @@ function hourIntervalString(start, end) {
 	var time = " (" + twelveHourTimeString(start.getHours());
 	time += "-" + twelveHourTimeString(end.getHours()) + ")";
 	return time;
+}
+
+// Return the offset from UTC in hours
+// Example: UTC +1000 -> 10
+function getTimezoneOffset(date) {
+    return date.getTimezoneOffset() / -60;
 }
